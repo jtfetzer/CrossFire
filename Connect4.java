@@ -355,9 +355,10 @@ public class Connect4 {
 		ArrayList<Move> bestMoves;						// Add best move as child node. 
 		for (int i = 0; i < moves.size(); i++) {		
 			bestMoves = possibilities(tempBoard, moves.get(i), player);	 
+			System.out.println("moves: " + moves.size());
 			for(Move best: bestMoves){		
 				Move next = new Move(best.row, best.column, best.value, getPlayer(player));
-				root.add(next, player, getPlayer(player));	// only checks one ply right now for each move
+				root.add(next, player);	// only checks one ply right now for each move
 			} // end for
 		} // end for i
 		return  evaluate(root, plies);// plies is a global variable, and refers to the depth of the search
@@ -1168,18 +1169,13 @@ public class Connect4 {
 	} // end method getBottom
 
 	public static Move evaluate(Node root, int depth) {
-		Move best = null;
-		if(root.children > 0){
-			best = root.child[0].move;
-			best.value = root.child[0].move.value;
-			int children = root.children;
-			for (int i = 1; i < children; i++) {
-				if(root.child[i].move.value > best.value){
-					best = root.child[i].move;
-					best.value = root.child[i].move.value;
-				} // end if
-			} // end for if
-		} // end if
+		Move best = root.child.get(0).move;
+		
+		for (int i = 1; i < root.children; i++) {
+			if(root.child.get(i).move.value > best.value){
+				best = root.child.get(i).move;
+			} // end if
+		} // end for if
 		return best;
 	} // end method evaluate
 	
