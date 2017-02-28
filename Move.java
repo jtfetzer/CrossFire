@@ -26,8 +26,10 @@ public class Move implements Serializable{
 	} // end constructor
 	
 	protected void update(Move move){ // needs to be expanded
-		this.value += move.value;
-		list.add(move.list.get(0));
+		value += move.value;
+		if(move.list.size() > 0){ // handles cases where move type is null
+			list.add(move.list.get(0));
+		}
 	} // end method updateValue
 
 } // end class Move

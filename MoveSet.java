@@ -15,12 +15,13 @@ public class MoveSet extends ArrayList<Move>{
 			if(next.moveString.equals(move.moveString)){ // MoveList contains this move already
 				next.update(move);
 				updated = true;
+				break;
 			}
 		}
 		if(!updated){
 			super.add(move);
 		}
-		return updated;
+		return updated; // must return a boolean to comply with ArrayList.add
 	}
 	
 	public boolean addAll(MoveSet moveList){

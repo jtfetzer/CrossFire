@@ -149,18 +149,18 @@ public class Node implements Serializable{
 			} // end for j
 		} // end for i
 		
-		if(x > o){
-			firstPlayer = 2; // computer
+		if(x >= o){
+			firstPlayer = 1; // human
 		} else {
-			firstPlayer = 1;
+			firstPlayer = 2; // computer
 		}
 		
 		for (int i = 0; i < board.length; i++) {
 			for (int j = 0; j < board.length; j++) {
 				if(board[i][j] == 1){
-					moves.add(new Move(i,j,firstPlayer,null));
+					moves.add(new Move(i,j,1,null));
 				} else if(board[i][j] == 2){
-					moves.add(new Move(i,j,2/firstPlayer,null));
+					moves.add(new Move(i,j,2,null));
 				}
 			} // end for j
 		} // end for i

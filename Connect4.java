@@ -118,6 +118,7 @@ public class Connect4 {
 			if(moveString.toLowerCase().equals("load")){
 				node.board = load();
 				node.updateStaticFields();
+				node.printBoard();
 				System.out.print("\n  Choose your next move: ");
 				moveString = in.nextLine();
 			} // end else if
@@ -186,7 +187,6 @@ public class Connect4 {
 				try {
 					line = br.readLine().split(" ");
 				} catch (IOException e) {
-					// TODO Auto-generated catch block
 					e.printStackTrace();
 				}
 				for (int j = 1; j < board.length; j++) {
@@ -198,7 +198,7 @@ public class Connect4 {
 					} // end else if
 				} // end for j
 			} // end for i
-			if(xCount < oCount){
+			if(xCount > oCount){ // computer if first player
 				for (int i = 0; i < board.length; i++) {
 					for (int j = 0; j < board.length; j++) {
 						if(board[i][j] == 1){
@@ -373,23 +373,14 @@ public class Connect4 {
 		} else {
 			col = 3;
 		}
-		Move start = new Move(3,4,2,null);
+		Move start = new Move(3,4,2, new MoveType(MoveType.Type.ONE_4, 30));
 //		Move start = new Move(row,col,1,2);
 			return start;
 	}
 	
 	public static Move getAnyAvailableMove(Node node) {
-		Move move = null;
-		for (int i = 0; i < node.board.length; i++) {
-			for (int j = 0; j < node.board.length; j++) {
-				if(node.board[i][j] == 0){
-					Move move1 = new Move(i,j,2/node.lastMove.player,null);
-					return move1;
-				} // end if
-			} // end for j
-		} // end for i
-		System.out.println("Error in method getAnyAvailableMove: " + node.lastMove.moveString);
-		return move;
+		MoveSet zeros = Node.getZeros(node); // return random available move
+		return zeros.get(java.util.concurrent.ThreadLocalRandom.current().nextInt(0, zeros.size()));
 	}
 	
 	public static boolean possibleConnect4(int[][] board, Move move) {
@@ -476,18 +467,17 @@ public class Connect4 {
 			} // end else
 		} 
 		if(block.contains("left")){
-			next = new Move(node.lastMove.row, node.lastMove.column - 1, player, new MoveType(MoveType.Type.BLOCK_MOST_SPACE, value));
+			list.add(new Move(node.lastMove.row, node.lastMove.column - 1, player, new MoveType(MoveType.Type.BLOCK_MOST_SPACE, value)));
 		} 
 		if(block.contains("right")){
-			next = new Move(node.lastMove.row, node.lastMove.column + 1, player, new MoveType(MoveType.Type.BLOCK_MOST_SPACE, value));
+			list.add(new Move(node.lastMove.row, node.lastMove.column + 1, player, new MoveType(MoveType.Type.BLOCK_MOST_SPACE, value)));
 		} 
 		if(block.contains("top")){
-			next = new Move(node.lastMove.row - 1, node.lastMove.column, player, new MoveType(MoveType.Type.BLOCK_MOST_SPACE, value));
+			list.add(new Move(node.lastMove.row - 1, node.lastMove.column, player, new MoveType(MoveType.Type.BLOCK_MOST_SPACE, value)));
 		} 
 		if(block.contains("bottom")){
-			next = new Move(node.lastMove.row + 1, node.lastMove.column, player, new MoveType(MoveType.Type.BLOCK_MOST_SPACE, value));
+			list.add(new Move(node.lastMove.row + 1, node.lastMove.column, player, new MoveType(MoveType.Type.BLOCK_MOST_SPACE, value)));
 		} // end else
-		list.add(next);
 		return list;
 	} // end method blockMostSpace
 
