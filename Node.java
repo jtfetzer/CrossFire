@@ -18,7 +18,9 @@ public class Node implements Serializable{
 	public static ArrayList<Move> moves = new ArrayList<>();
 	public static int firstPlayer;
 	
-	Node(){	}
+	Node(int firstPlayer){
+		Node.firstPlayer = firstPlayer;
+	}
 	
 	Node(Move move){
 		update(move);
@@ -46,7 +48,6 @@ public class Node implements Serializable{
 		if(move == null){
 			return;
 		} // end if
-// changed from Connect4.board
 		if(board[move.row][move.column] != 0){
 //			System.out.println("Move taken: " + Connect4.getRow(move.row) + (move.column + 1) + ": " + move.value);
 			return; // if move already taken

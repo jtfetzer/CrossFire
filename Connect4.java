@@ -17,12 +17,12 @@ public class Connect4 {
 	
 	public static void main(String[] args) {
 		Scanner in = new Scanner(System.in);
-		System.out.print("Debug: y/n: ");
-		String debug = in.nextLine();
-		
-		if(debug.toLowerCase().equals("y")){
-			test = true;
-		}
+//		System.out.print("Load Board?: y/n: ");
+//		String debug = in.nextLine();
+//		
+//		if(debug.toLowerCase().equals("y")){
+//			test = true;
+//		}
 		Node node = null;
 		if(test){
 
@@ -56,14 +56,12 @@ public class Connect4 {
 				root = new Node(getRandomStartMove());
 				root.printBoard();					//lastMove.column +1 because board starts at column 1						
 				System.out.println("\n  My current move is: " + getRow(root.lastMove.row) + (root.lastMove.column + 1));
+				root.update(validate(root));
 			} // end if
 			if(firstPlayer == 1){	
-				root = new Node();
-				root.update(validate(firstPlayer, root));
+				root = new Node(firstPlayer); 
+				root.update(validate(firstPlayer, root)); 
 			} 
-//			else { 
-//				root.update(validate(root));
-//			} // end else
 		} else {
 			root.update(validate(root));
 		}
@@ -91,22 +89,22 @@ public class Connect4 {
 		} // end if
 	} // end method testGameOver
 
-	public static void printEmptyBoard(){
-		String[] rows = {"A", "B", "C", "D", "E", "F", "G", "H"};
-		int[] cols = {1,2,3,4,5,6,7,8};
-		System.out.print("\n  ");
-		for (int i = 0; i < cols.length; i++) {
-			System.out.print(cols[i] + " ");
-		} // end for i
-		System.out.println();
-		for (int i = 0; i < 8; i++) {
-			System.out.print(rows[i] + " ");
-			for (int j = 0; j < 8; j++) {
-				System.out.print("_ ");
-			} // end for i
-			System.out.println();
-		} // end for j
-	} // end method printEmptyBoard
+//	public static void printEmptyBoard(){
+//		String[] rows = {"A", "B", "C", "D", "E", "F", "G", "H"};
+//		int[] cols = {1,2,3,4,5,6,7,8};
+//		System.out.print("\n  ");
+//		for (int i = 0; i < cols.length; i++) {
+//			System.out.print(cols[i] + " ");
+//		} // end for i
+//		System.out.println();
+//		for (int i = 0; i < 8; i++) {
+//			System.out.print(rows[i] + " ");
+//			for (int j = 0; j < 8; j++) {
+//				System.out.print("_ ");
+//			} // end for i
+//			System.out.println();
+//		} // end for j
+//	} // end method printEmptyBoard
 	
 	private static Move validate(int player, Node node) { // used for human first move
 		int row = 0, column = 0;
@@ -129,7 +127,7 @@ public class Connect4 {
 			if(row > 7 || column > 7){
 				System.out.println("  Invalid entry, try again.");
 			} else {
-				return new Move(row, column, player, new MoveType(MoveType.Type.ONE_4, 30));
+				return new Move(row, column, player, null); // new MoveType(MoveType.Type.ONE_4, 30)
 			} // end else
 		} // end while
 	} // end method validate
@@ -267,7 +265,7 @@ public class Connect4 {
 		//System.out.println("Node num Children: " + node.children.size());
 		MoveSet bestMoves = possibilities(node);
 			for(Move best: bestMoves){	
-				System.out.println(best.moveString + ": " + best.list.toString() + "~ " + best.value);
+//				System.out.println(best.moveString + ": " + best.list.toString() + "~ " + best.value);
 				node.addNode(best);	// each move added is a child node and part of the beam search
 			} // end for					
 		return evaluate(node); // perform a stochastic beam search implementing minimax with alpha-beta pruning
@@ -286,10 +284,10 @@ public class Connect4 {
 		MoveSet twoOfFourPositions = getTwoOfFourPositionsList(node);
 		
 		if(connect4Positions.size() > 0) {
-			System.out.println("CONNECT 4: ");
-			for(Move move : connect4Positions){
-				System.out.println(move.moveString);
-			}
+//			System.out.println("CONNECT 4: ");
+//			for(Move move : connect4Positions){
+//				System.out.println(move.moveString);
+//			}
 			return connect4Positions;
 //			return removeDups(connect4Positions);
 		} // end if
@@ -323,28 +321,8 @@ public class Connect4 {
 			best.addAll(blockMostSpace(node));
 		} // end if
 		return best;
-//		return removeDups(best);
 	} // end method possibilities
 	
-//	private static MoveList removeDups(MoveList best) {
-//		if(best.size() < 2) {
-//			return best;
-//		}
-//		MoveList removeDups = new MoveList();
-//		java.util.Collections.sort(best, new AlphaSort3());
-//		for (int i = 0; i < best.size() - 1; i++) {
-//			if(! best.get(i).moveString.equals(best.get(i+1).moveString)){
-//				removeDups.add(best.get(i));
-//			} else {
-//				best.get(i+1).value += best.get(i).value;
-//			}
-//		} // end for i
-//		removeDups.add(best.get(best.size() - 1));
-//		java.util.Collections.sort(removeDups, new MoveComparator());
-//		System.out.println("Dups:");
-//		return removeDups;
-//	}
-
 	public static Move evaluate(Node root) {
 		if(root.getNumEmptySpaces() == 0){ // Change to check to see if game will end in stalemate.
 			if(possibleConnect4(root.board, root.lastMove)){
@@ -375,7 +353,7 @@ public class Connect4 {
 				root.printBoard();
 				System.exit(0);
 			} // end if
-			System.out.println(best.list.toString());
+//			System.out.println(best.list.toString());
 			return best;
 		} else {
 			return getAnyAvailableMove(root);
@@ -1655,22 +1633,9 @@ public class Connect4 {
 			} // end if(col == 7) // column 7
 		} // end for
 		
-		//System.out.println("------------------");
-		
-		//System.out.println("__Open3__: " + open3Positions.size());
-//		for(Move move : open3Positions){
-			//System.out.println(move.moveString);
-//		}
-		//System.out.println("------------------");
-		
 		return open3Positions;
 	} // end class updateOpen3PositionsList, check open3Positions
 	
-	@SuppressWarnings("unused")
-	private static void preOpen3(Move move){
-		
-	} // end method
-
 	private static MoveSet getSmallOpenLPositionsList(Node node){ 
 		MoveSet smallOpenLPositions = new MoveSet();
 		int value;
@@ -1690,29 +1655,29 @@ public class Connect4 {
 				if(col == 1){
 					smallOpenLPositions.addAll(smallOpenLColumn1(node, move, type));
 				} else if(col == 2 || col == 3 || col == 4){
-					System.out.print("1Move: " + move.moveString + "~ ");
+//					System.out.print("1Move: " + move.moveString + "~ ");
 					smallOpenLPositions.addAll(smallOpenLColumns_2_3_4(node, move, type));
-					for(Move myMove: smallOpenLPositions){
-						System.out.print(myMove.moveString + ", ");
-					}
-					System.out.println("1END Move " + move.moveString );
+//					for(Move myMove: smallOpenLPositions){
+//						System.out.print(myMove.moveString + ", ");
+//					}
+//					System.out.println("1END Move " + move.moveString );
 				} if(col == 3 || col == 4 || col == 5){
-					System.out.print("2Move: " + move.moveString + "~ ");
+//					System.out.print("2Move: " + move.moveString + "~ ");
 					smallOpenLPositions.addAll(smallOpenLColumns_3_4_5(node, move, type));
-					for(Move myMove: smallOpenLPositions){
-						System.out.print(myMove.moveString + ", ");
-					}
-					System.out.println("2END Move " + move.moveString );
+//					for(Move myMove: smallOpenLPositions){
+//						System.out.print(myMove.moveString + ", ");
+//					}
+//					System.out.println("2END Move " + move.moveString );
 				} else if(col == 6){
 					smallOpenLPositions.addAll(smallOpenLColumn6(node, move, type));
 				} 
 			 } // end if
 		} // end for
-		System.out.println("small L");
-		for(Move move : smallOpenLPositions){
-			System.out.println(move.moveString + ": " + move.value);
-		}
-		System.out.println("End Small L");
+//		System.out.println("small L");
+//		for(Move move : smallOpenLPositions){
+//			System.out.println(move.moveString + ": " + move.value);
+//		}
+//		System.out.println("End Small L");
 		return smallOpenLPositions;
 	} // end method smallOpenLPositions
 	
@@ -1742,7 +1707,7 @@ public class Connect4 {
 						board[row + 3][col + 1] == i)){ // down 3 right 1
 						
 						 smallOpenLPositions.add(new Move(row, col + 1, player, type)); // right 1
-						 System.out.print("1PosSmallOpenL: " + getRow(row) + (col + 2) + ": " + type.value + ", "); // right 1
+//						 System.out.print("1PosSmallOpenL: " + getRow(row) + (col + 2) + ": " + type.value + ", "); // right 1
 					} // end if
 				} // end if right 1
 				if(board[row + 1][col]  == 0){  // down 1
@@ -1760,7 +1725,7 @@ public class Connect4 {
 						 board[row + 3][col]   == i)){ // down 3
 						
 						smallOpenLPositions.add(new Move(row + 1, col, player, type)); // down 1
-						System.out.print("2PosSmallOpenL: " + getRow(row + 1) + (col + 1) + ": " + type.value + ", "); // down 1
+//						System.out.print("2PosSmallOpenL: " + getRow(row + 1) + (col + 1) + ": " + type.value + ", "); // down 1
 					} // end if
 				} // end else if
 			} if(board[row][col + 1] == i && // right 1
@@ -1777,7 +1742,7 @@ public class Connect4 {
 				    board[row + 3][col]   == i)){ // down 3
 						
 					smallOpenLPositions.add(new Move(row + 1, col, player, type)); // down 1
-					System.out.print("3PosSmallOpenL: " + getRow(row + 1) + (col + 1) + ": " + type.value + ", "); // down 1
+					//System.out.print("3PosSmallOpenL: " + getRow(row + 1) + (col + 1) + ": " + type.value + ", "); // down 1
 				} // end if						
 			} else if(board[row][col + 1]  == 0 && // right 1
 					  board[row + 1][col]  == i){  // down 1
@@ -1796,7 +1761,7 @@ public class Connect4 {
 					board[row + 3][col] == i)){    // down 3
 					
 					smallOpenLPositions.add(new Move(row, col + 1, player, type)); // right 1
-					System.out.print("4PosSmallOpenL: " + getRow(row) + (col + 2) + ": " + type.value + ", "); // right 1
+					//System.out.print("4PosSmallOpenL: " + getRow(row) + (col + 2) + ": " + type.value + ", "); // right 1
 				} // end if						
 			} // end else if
 		} if(row == 6){ // row 6 column 1
@@ -1817,7 +1782,7 @@ public class Connect4 {
 						board[row - 3][col + 1] == i)){ // up 3 right 1
 						
 						 smallOpenLPositions.add(new Move(row, col + 1, player, type)); // right 1
-						 System.out.print("5PosSmallOpenL: " + getRow(row) + (col + 2) + ": " + type.value + ", "); // right 1
+						 //System.out.print("5PosSmallOpenL: " + getRow(row) + (col + 2) + ": " + type.value + ", "); // right 1
 					} // end if
 				} // end if right 1
 				if(board[row - 1][col]  == 0){  // up 1
@@ -1836,7 +1801,7 @@ public class Connect4 {
 					   board[row - 3][col]   == i)){ // up 3
 						
 						smallOpenLPositions.add(new Move(row - 1, col, player, type)); // up 1
-						System.out.print("6PosSmallOpenL: " + getRow(row - 1) + (col) + ": " + type.value + ", "); // up 1
+						//System.out.print("6PosSmallOpenL: " + getRow(row - 1) + (col) + ": " + type.value + ", "); // up 1
 					} // end if
 				} // end else if
 			} if(board[row][col + 1] == i && // right 1
@@ -1854,7 +1819,7 @@ public class Connect4 {
 				    board[row - 3][col]   == i)){ // up 3
 						
 					smallOpenLPositions.add(new Move(row - 1, col, player, type)); // up 1
-					System.out.print("7PosSmallOpenL: " + getRow(row - 1) + (col + 1) + ": " + type.value + ", "); // up 1
+					//System.out.print("7PosSmallOpenL: " + getRow(row - 1) + (col + 1) + ": " + type.value + ", "); // up 1
 				} // end if						
 			} else if(board[row][col + 1]  == 0 && // right 1
 					  board[row - 1][col]  == i){  // up 1
@@ -1873,7 +1838,7 @@ public class Connect4 {
 					board[row - 3][col] == i)){    // up 3
 					
 					smallOpenLPositions.add(new Move(row, col + 1, player, type)); // right 1
-					System.out.print("8PosSmallOpenL: " + getRow(row) + (col + 2) + ": " + type.value + ", "); // right 1
+					//System.out.print("8PosSmallOpenL: " + getRow(row) + (col + 2) + ": " + type.value + ", "); // right 1
 				} // end if						
 			} // end else if
 		} else if(row == 2){ // row 2 column 1
@@ -1896,7 +1861,7 @@ public class Connect4 {
 					    board[row - 2][col + 1] == i)){ // up 2 right 1	
 
 						smallOpenLPositions.add(new Move(row + 1, col + 1, player, type)); // down 1 right 1
-						System.out.print("9PosSmallOpenL: " + getRow(row + 1) + (col + 2) + ": " + type.value + ", "); // down 1 right 1
+						//System.out.print("9PosSmallOpenL: " + getRow(row + 1) + (col + 2) + ": " + type.value + ", "); // down 1 right 1
 					} // end if	
 				} else if(board[row][col + 1]      == 0 && // right 1
 						  board[row + 1][col + 1]  == i){  // down 1 right 1
@@ -1917,7 +1882,7 @@ public class Connect4 {
 						    board[row - 2][col + 1] == i)){ // up 2 right 1					   
 						  
 							smallOpenLPositions.add(new Move(row, col + 1, player, type)); // right 1
-							System.out.print("A PosSmallOpenL: " + getRow(row) + (col + 2) + ": " + type.value + ", "); // right 1
+							//System.out.print("A PosSmallOpenL: " + getRow(row) + (col + 2) + ": " + type.value + ", "); // right 1
 						} // end if	
 				} if(board[row + 1][col] 	   	   == i && // down 1
 					  board[row + 1][col + 1]      == 0){  // down 1 right 1
@@ -1939,7 +1904,7 @@ public class Connect4 {
 
 							
 							smallOpenLPositions.add(new Move(row + 1, col + 1, player, type)); // down 1 right 1
-							System.out.print("B PosSmallOpenL: " + getRow(row + 1) + (col + 2) + ": " + type.value + ", "); // down 1 right 1
+							//System.out.print("B PosSmallOpenL: " + getRow(row + 1) + (col + 2) + ": " + type.value + ", "); // down 1 right 1
 						} // end if	
 				} else if(board[row + 1][col]      	   == 0 &&    // down 1
 						  board[row + 1][col + 1]  == i){ // down 1 right 1
@@ -1960,7 +1925,7 @@ public class Connect4 {
 						    board[row - 2][col] 		== i)){ // up 2
 							
 							smallOpenLPositions.add(new Move(row + 1, col, player, type)); // down 1
-							System.out.print("C PosSmallOpenL: " + getRow(row + 1) + (col + 1) + ": " + type.value + ", "); // down 1
+							//System.out.print("C PosSmallOpenL: " + getRow(row + 1) + (col + 1) + ": " + type.value + ", "); // down 1
 						} // end if		
 				} if(board[row][col + 1] 	 == i && // right 1
 				     board[row - 1][col + 1] == 0){  // up 1 right 1
@@ -1979,7 +1944,7 @@ public class Connect4 {
 					    board[row + 2][col + 1] == i)){ // down 2 right 1
 
 						smallOpenLPositions.add(new Move(row - 1, col + 1, player, type)); // down 1 right 1
-						System.out.print("D PosSmallOpenL: " + getRow(row - 1) + (col + 2) + ": " + type.value + ", "); // down 1 right 1	  
+						//System.out.print("D PosSmallOpenL: " + getRow(row - 1) + (col + 2) + ": " + type.value + ", "); // down 1 right 1	  
 					} // end if	
 				} else if(board[row][col + 1] == 0 && // right 1
 					board[row - 1][col + 1]    == i){ // up 1 right 1
@@ -1998,7 +1963,7 @@ public class Connect4 {
 						    board[row + 2][col + 1] == i)){ // down 2 right 1
 
 						smallOpenLPositions.add(new Move(row, col + 1, player, type)); // right 1
-						System.out.print("E PosSmallOpenL: " + getRow(row) + (col + 2) + ": " + type.value + ", "); // right 1	  
+						//System.out.print("E PosSmallOpenL: " + getRow(row) + (col + 2) + ": " + type.value + ", "); // right 1	  
 					} // end if	
 				} // end else if
 		} else if(row == 5) { // row 5 column 1
@@ -2021,7 +1986,7 @@ public class Connect4 {
 				    board[row - 3][col + 1] == i)){    // up 3 right 1
 
 					smallOpenLPositions.add(new Move(row - 1, col + 1, player, type)); // up 1 right 1
-					System.out.print("F PosSmallOpenL: " + getRow(row - 1) + (col + 2) + ": " + type.value + ", "); // up 1 right 1
+					//System.out.print("F PosSmallOpenL: " + getRow(row - 1) + (col + 2) + ": " + type.value + ", "); // up 1 right 1
 				} // end if	
 			} else if(board[row][col + 1] == 0 &&    // right 1
 					  board[row - 1][col + 1] == i){ // up 1 right 1
@@ -2042,7 +2007,7 @@ public class Connect4 {
 					    board[row - 3][col + 1] == i)){    // up 3 right 1
 
 						smallOpenLPositions.add(new Move(row, col + 1, player, type)); // right 1
-						System.out.print("G PosSmallOpenL: " + getRow(row) + (col + 2) + ": " + type.value + ", "); // right 1
+						//System.out.print("G PosSmallOpenL: " + getRow(row) + (col + 2) + ": " + type.value + ", "); // right 1
 				} // end if	
 			} // end else if
 		} else if(row < 5 && row > 2){ // rows 3 - 4 in column 1
@@ -2065,7 +2030,7 @@ public class Connect4 {
 				    board[row - 2][col + 1] == i)){   // up 2 right 1
 	   
 					smallOpenLPositions.add(new Move(row + 1, col + 1, player, type)); // down 1 right 1
-					System.out.print("H PosSmallOpenL: " + getRow(row + 1) + (col + 2) + ": " + type.value + ", "); // down 1 right 1
+					//System.out.print("H PosSmallOpenL: " + getRow(row + 1) + (col + 2) + ": " + type.value + ", "); // down 1 right 1
 				} // end if	
 			} else if(board[row][col + 1] == 0 &&     // right 1
 					  board[row + 1][col + 1] == i){  // down 1 right 1
@@ -2086,7 +2051,7 @@ public class Connect4 {
 				    board[row - 2][col + 1] == i)){   // up 2 right 1
 	   
 					smallOpenLPositions.add(new Move(row, col + 1, player, type)); // right 1
-					System.out.print("I PosSmallOpenL: " + getRow(row) + (col + 2) + ": " + type.value + ", "); // right 1
+					//System.out.print("I PosSmallOpenL: " + getRow(row) + (col + 2) + ": " + type.value + ", "); // right 1
 				} // end if	
 			} else if(board[row][col + 1] == i &&    // right 1
 					  board[row - 1][col + 1] == 0){ // up 1 right 1
@@ -2107,7 +2072,7 @@ public class Connect4 {
 				    board[row - 3][col + 1] == i)){  // up 3 right 1
 
 					smallOpenLPositions.add(new Move(row - 1, col + 1, player, type)); // up 1 right 1
-					System.out.print("J PosSmallOpenL: " + getRow(row - 1) + (col + 2) + ": " + type.value + ", "); // up 1 right 1
+					//System.out.print("J PosSmallOpenL: " + getRow(row - 1) + (col + 2) + ": " + type.value + ", "); // up 1 right 1
 				} // end if	
 			} else if(board[row][col + 1] == 0 &&    // right 1
 					  board[row - 1][col + 1] == i){ // up 1 right 1
@@ -2128,7 +2093,7 @@ public class Connect4 {
 				    board[row - 3][col + 1] == i)){  // up 3 right 1
 
 					smallOpenLPositions.add(new Move(row, col + 1, player, type)); // right 1
-					System.out.print("K PosSmallOpenL: " + getRow(row) + (col + 2) + ": " + type.value + ", "); // right 1
+					//System.out.print("K PosSmallOpenL: " + getRow(row) + (col + 2) + ": " + type.value + ", "); // right 1
 				} // end if	
 			} // end else if
 		} // end else if
@@ -2607,7 +2572,7 @@ public class Connect4 {
 		
 		if(row == 1){ // row 1, column 2
 			if(board[row + 1][col - 1] == i){ // diagonal down left								
-				System.out.println("sL: " + "dl");
+				//System.out.println("sL: " + "dl");
 				if(board[row][col - 1] == 0){ // left 1
 					if((board[row][col - 2]     == 0 || // left 2
 					    board[row][col - 2]     == i)&& // left 2
@@ -2670,7 +2635,7 @@ public class Connect4 {
 			} // end if						
 			if(board[row + 1][col + 1] == i){ // diagonal down right
 				if(board[row][col + 1] == 0){  // right 1
-					System.out.println("sL: " + "dr");
+					//System.out.println("sL: " + "dr");
 					if((board[row][col + 2]     == 0 || // right 2
 					    board[row][col + 2]     == i)&& // right 2
 					   (board[row][col - 1]     == 0 || // left 1
@@ -2739,7 +2704,7 @@ public class Connect4 {
 			} // end if				  
 		} if(row == 6){ // row 6 column 2
 			if(board[row - 1][col - 1] == i){ // diagonal up left								
-				System.out.println("sL: " + "dl");
+				//System.out.println("sL: " + "dl");
 				if(board[row][col - 1] == 0){ // left 1
 					
 					if((board[row][col - 2]     == 0 || // left 2
@@ -2803,7 +2768,7 @@ public class Connect4 {
 			} // end if						
 			if(board[row - 1][col + 1] == i){ // diagonal up right
 				if(board[row][col + 1] == 0){ // right 1
-					System.out.println("sL: " + "dr");
+					//System.out.println("sL: " + "dr");
 					if((board[row][col + 2]     == 0 || // right 2
 						board[row][col + 2]     == i)&& // right 2
 					   (board[row][col - 1]     == 0 || // left 1
@@ -2872,7 +2837,7 @@ public class Connect4 {
 			} // end if				  
 		} else if(row == 2 || row == 3 || row == 4){ // row 2-4, column 2
 			if(board[row - 1][col - 1] == i){ // diagonal up left
-				System.out.println("up left");
+				//System.out.println("up left");
 				if(board[row - 1][col] == 0){ // up 1
 					if((board[row - 1][col - 2] == 0 || // up 1 left 2
 					    board[row - 1][col - 2] == i)&& // up 1 left 2
@@ -3154,7 +3119,7 @@ public class Connect4 {
 			} // end if
 		} else if(row == 3 || row == 4 || row == 5){ // row 3-5 column 2
 			if(board[row + 1][col - 1] == i){ // diagonal down left
-				System.out.println("down left");
+				//System.out.println("down left");
 				if(board[row + 1][col] == 0){ // down 1
 					if((board[row + 1][col - 2] == 0 || // down 1 left 2
 						board[row + 1][col - 2] == i)&& // down 1 left 2
@@ -3449,7 +3414,7 @@ public class Connect4 {
 		
 		if(row == 1){ // row 1, column 5
 			if(board[row + 1][col + 1] == i){ // diagonal down right								
-				System.out.println("sL: " + "dl");
+				//System.out.println("sL: " + "dl");
 				if(board[row][col + 1] == 0){ // right 1
 					if((board[row][col + 2]     == 0 || // right 2
 						board[row][col + 2]     == i)&& // right 2
@@ -3512,7 +3477,7 @@ public class Connect4 {
 			} // end if						
 			if(board[row + 1][col - 1] == i){ // diagonal down left
 				if(board[row][col - 1] == 0){  // left 1
-					System.out.println("sL: " + "dr");
+					//System.out.println("sL: " + "dr");
 					if((board[row][col - 2]     == 0 || // left 2
 						board[row][col - 2]     == i)&& // left 2
 					   (board[row][col + 1]     == 0 || // right 1
@@ -3581,7 +3546,7 @@ public class Connect4 {
 			} // end if				  
 		} if(row == 6){ // row 6 column 5
 			if(board[row - 1][col + 1] == i){ // diagonal up right								
-				System.out.println("sL: " + "dl");
+				//System.out.println("sL: " + "dl");
 				if(board[row][col + 1] == 0){ // right 1
 					
 					if((board[row][col + 2]     == 0 || // right 2
@@ -3645,7 +3610,7 @@ public class Connect4 {
 			} // end if						
 			if(board[row - 1][col - 1] == i){ // diagonal up left
 				if(board[row][col - 1] == 0){ // left 1
-					System.out.println("sL: " + "dr");
+					//System.out.println("sL: " + "dr");
 					if((board[row][col - 2]     == 0 || // left 2
 						board[row][col - 2]     == i)&& // left 2
 					   (board[row][col + 1]     == 0 || // right 1
@@ -3714,7 +3679,7 @@ public class Connect4 {
 			} // end if				  
 		} else if(row == 2 || row == 3 || row == 4){ // row 2-4, column 5
 			if(board[row - 1][col + 1] == i){ // diagonal up right
-				System.out.println("up right");
+				//System.out.println("up right");
 				if(board[row - 1][col] == 0){ // up 1
 					if((board[row - 1][col + 2] == 0 || // up 1 right 2
 						board[row - 1][col + 2] == i)&& // up 1 right 2
@@ -3996,7 +3961,7 @@ public class Connect4 {
 			} // end if
 		} else if(row == 3 || row == 4 || row == 5){ // row 3-5 column 5
 			if(board[row + 1][col + 1] == i){ // diagonal down right
-				System.out.println("down right");
+				//System.out.println("down right");
 				if(board[row + 1][col] == 0){ // down 1
 					if((board[row + 1][col + 2] == 0 || // down 1 right 2
 						board[row + 1][col + 2] == i)&& // down 1 right 2
@@ -4306,11 +4271,11 @@ public class Connect4 {
 				} // end if
 			 } // end if
 		} // end for
-		System.out.println("Big L");
-		for(Move move : bigOpenLPositions){
-			System.out.println(move.moveString + ": " + move.value);
-		}
-		System.out.println("End Big L");
+//		System.out.println("Big L");
+//		for(Move move : bigOpenLPositions){
+//			System.out.println(move.moveString + ": " + move.value);
+//		}
+//		System.out.println("End Big L");
 		return bigOpenLPositions;
 	} // end method bigOpenL
 
@@ -5388,19 +5353,19 @@ public class Connect4 {
 				if(col == 2 || col == 3 || col == 4){
 					preBigOpenLPositions.addAll(preBigOpenL_Columns_2_3_4(node, move, type));
 				} // end if
-				System.out.println("1: " + preBigOpenLPositions.size());
-				for(Move myMove : preBigOpenLPositions){
-					System.out.print(myMove.moveString + ", ");
-				}
-				System.out.println();
+//				System.out.println("1: " + preBigOpenLPositions.size());
+//				for(Move myMove : preBigOpenLPositions){
+//					System.out.print(myMove.moveString + ", ");
+//				}
+//				System.out.println();
 				if(col == 3 || col == 4 || col == 5){
 					preBigOpenLPositions.addAll(preBigOpenL_Columns_3_4_5(node, move, type));
 				} // end if
-				System.out.println("2: " + preBigOpenLPositions.size());
-				for(Move myMove : preBigOpenLPositions){
-					System.out.print(myMove.moveString + ", ");
-				}
-				System.out.println();
+//				System.out.println("2: " + preBigOpenLPositions.size());
+//				for(Move myMove : preBigOpenLPositions){
+//					System.out.print(myMove.moveString + ", ");
+//				}
+//				System.out.println();
 				if(col == 6){
 					preBigOpenLPositions.addAll(preBigOpenL_Column_6(node, move, type));
 				} // end if
@@ -5984,7 +5949,7 @@ public class Connect4 {
 		int row = move.row;
 		int col = move.column;
 		
-		System.out.println(move.moveString + ": ");
+		//System.out.println(move.moveString + ": ");
 		if(row == 0 || row == 1 || row == 2 || row == 3 || row == 4){
 			
 			if(board[row + 1][col] == i){ 	   // down 1
@@ -6278,8 +6243,8 @@ public class Connect4 {
 //			}
 //			System.out.println();
 		} // end if
-		if(threeOfFourPositions.size() > 0)
-		System.out.println(threeOfFourPositions.get(threeOfFourPositions.size() - 1).moveString + ", value: " + type.value);
+//		if(threeOfFourPositions.size() > 0)
+//		System.out.println(threeOfFourPositions.get(threeOfFourPositions.size() - 1).moveString + ", value: " + type.value);
 		
 		return threeOfFourPositions;
 	}
