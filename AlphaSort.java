@@ -2,7 +2,7 @@ package Connect4;
 
 public class AlphaSort {
 	
-		public static int compare(Node node1, Node node2) {
+		public static int compare(BoardNode node1, BoardNode node2) {
 			Move move1 = node1.lastMove;
 			Move move2 = node2.lastMove;
 			
