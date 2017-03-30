@@ -47,7 +47,7 @@ public class Transpose {
 		String rowMove = line.substring(a,c);
 		String colMove= line.substring(b,d);
 		if(line.contains("Move")){
-			line = line.substring(0, line.indexOf("row") + 3) + colMove + ", col" + rowMove + ", value, player)); // " + line.substring(comment, line.length());
+			line = line.substring(0, line.indexOf("row") + 3) + colMove + ", col" + rowMove + ", player, type)); // " + line.substring(comment, line.length());
 			line = line.replace("up", "templ");
 			line = line.replace("down", "tempr");
 			

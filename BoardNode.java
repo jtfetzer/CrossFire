@@ -189,7 +189,6 @@ public class BoardNode implements Serializable{
 			int row = lastMove.row;
 			int col = lastMove.column;
 			board[row][col] = lastMove.player;
-//			System.out.println("Update");
 			map.put(move.moveString, move.moveString);
 		} else {
 			System.out.println("Update Error");
@@ -227,7 +226,7 @@ public class BoardNode implements Serializable{
 		for (int i = 0; i < this.board.length; i++) {
 			for (int j = 0; j < this.board.length; j++) {
 				if(this.board[i][j] == 0){
-					zeros.addUnique(new Move(i, j, 2/this.lastMove.player,null));
+					zeros.addUnique(new Move(i, j, 2/this.lastMove.player,  new MoveType(MoveType.Type.ZEROS, 100)));
 				}
 			} // end for j
 		} // end for i

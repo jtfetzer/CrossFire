@@ -31,6 +31,10 @@ public class MoveType {
 		this.value = value;
 	}
 	
+	public String toString(){
+		return type.toString();
+	}
+	
 	public void changeValue(int value){
 		this.value = value;
 	}
@@ -76,6 +80,20 @@ public class MoveType {
 		return false;
 	}
 
+	private boolean isOpen() {
+		if(this.type.toString().contains("OPEN")){
+			return true;
+		} else {
+			return false;
+		}
+	}
+	
+	private boolean withModifiers(){
+		if(this.type.toString().contains("PRE") || this.type.toString().contains("BLOCK")){
+			return false;
+		}
+		return true;
+	}
 	/**
 	 * 
 	 * @param moveType
@@ -102,7 +120,12 @@ public class MoveType {
 			
 			return false;
 		} 
+//		else if((isOpen() && withModifiers()) && (moveType.isOpen() && moveType.withModifiers()) ){
+//			
+//			return false;
+//		}
 		
 		return true;
 	}
+
 }
