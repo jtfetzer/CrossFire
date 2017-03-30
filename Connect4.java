@@ -7,11 +7,11 @@ import java.io.IOException;
 import java.io.ObjectOutputStream;
 import java.util.Scanner;
 
-public class Connect4 {
+public class Connect4{
 
 	private static Scanner in = new Scanner(System.in);
-	private static final int MAX_WIDTH = 4; // Max width of search
-	static final int MAX_DEPTH = 7; // Max depth of search
+	private static final int MAX_WIDTH = 5; // Max width of search
+	static final int MAX_DEPTH = 10; // Max depth of search
 	static final int MAX_WINS = 50000; // Computer wins with connect 4
 	static final int MIN_WINS = -50000; // Human wins with connect 4
 	
@@ -24,7 +24,7 @@ public class Connect4 {
 	static final int TWO_OF_FOUR_VALUE = 4000;
 	static int BLOCK_MOST_SPACE_VALUE = 10000;
 	static final int ONE_OF_FOUR_VALUE = 500;
-	static final double PRE_MULT = .5;
+	static final double PRE_MULT = .6;
 	static final double BLOCK_MULT = .1; 		// reduce value of block moves by this multiplier,
 											 	// e.g. a value of .1 will reduce block move values by 
 	public static void main(String[] args) { 	// 10% of their attack move value counterparts.
@@ -37,9 +37,10 @@ public class Connect4 {
 		BoardNode root = null;
 		int firstPlayer;
 		
-		System.out.print("Would you like to go first? (y/n): ");
-		String playFirst = in.nextLine().toLowerCase();
+//		System.out.print("Would you like to go first? (y/n): ");
+//		String playFirst = in.nextLine().toLowerCase();
 		
+		String playFirst = "y";
 		if(playFirst.equals("y")){
 			firstPlayer = 1; // human
 		} else {
@@ -117,7 +118,6 @@ public class Connect4 {
 			} else {
 				if(node.hasMoveBeenPlayed(moveString)) {
 					System.out.println("  ~ " + getRow(row) + (column + 1)+ " is already taken.");
-					//System.out.println(node.map.values());
 				} else {
 					return new Move(row, column, player, null); 
 				}
@@ -153,7 +153,7 @@ public class Connect4 {
 				if(node.hasMoveBeenPlayed(moveString)) {
 					System.out.println("  ~ " + getRow(row) + (column + 1)+ " is already taken.");
 				} 
-				else { // cache results
+				else { // modify to cache results and predict opponent moves
 //					if(node.containsChildNode(moveString)){
 //						System.out.println("Move String: " + moveString);
 //						node.removeAllChildNodesExcept(moveString);
@@ -267,10 +267,12 @@ public class Connect4 {
 			bestMoves.sort(new MinMoveComparator());
 		}
 		
+		    // MODIFY TO USE A STOCHASTIC BEAM SEARCH?
 			// These moves are thought to be the most promising. The number of moves 
-			// examined is reduced the size of MAX_WIDTH.
-			// The BoardNode values are determined via the MiniMax algorithm.
-			// Only values MAX_WINS, MIN_WINS, and 0 are possible.
+			// examined is reduced to reduce the size of the search space.
+			// These moves do not yet have evaluated values, as their values 
+			// are determined via the minimax algorithm.
+			// each move added is a child node and part of the beam search
 		if(player == 2){ // computer
 			bestMoves.reduceMax(MAX_WIDTH); // perform a stochastic beam search implementing minimax with alpha-beta pruning
 		} else {
@@ -295,9 +297,9 @@ public class Connect4 {
 		MoveSet twoOfFourPositions = getTwoOfFourPositionsList(node, block);
 		
 		if(open3Positions.size() > 0){
-			if(open3Positions.getNumOpen3() > 0){ // open3Positions contains both open3Positions and preOpen3Positions
-				return open3Positions.getOpen3();			  // check whether this MoveSet contains any open3Positions
-			}
+//			if(open3Positions.getNumOpen3() > 0){ // open3Positions contains both open3Positions and preOpen3Positions
+//				return open3Positions.getOpen3();			  // check whether this MoveSet contains any open3Positions
+//			}
 			best.addAll(open3Positions);
 		} 
 		if(smallOpenLPositions.size() > 0){
@@ -326,17 +328,21 @@ public class Connect4 {
 		if(best.size() < MAX_WIDTH){
 			best.addAll(getOneOfFourPositionsList(node, node.getZeros()));
 		}
+		if(best.size() < MAX_WIDTH){
+			best.addAll(node.getZeros());
+		}
+//		best.print("best");
 		return best;
 	} // end method possibilities
 	
 	public static Move chooseMove(BoardNode root) { // root.children are sorted into best order
-		int depth = MAX_DEPTH;
 
+		root.printBoard();
 		MoveSet attacks = getMostPromisingMoves(root, false);
 		MoveSet blocks = getMostPromisingMoves(root, true);
 		
-		if(root.moves.size() < 2){ // save time for first move.
-			return blocks.max();   
+		if(root.moves.size() < 2){ // save time of first move
+			return blocks.max();
 		}
 
 		if(attacks.max().getValue() > blocks.max().getValue()){
@@ -353,22 +359,37 @@ public class Connect4 {
 //				System.exit(0);
 //			} // end else
 //		} // end if
-//		Move best_attack = attacks.max();
 		Move best_block = blocks.max();
-		
+		int minWinDepth = MAX_DEPTH + 1;
+		int maxWinDepth = MAX_DEPTH + 1;
+		Move maxWinMove = null;
 		for (int i = 0; i < 2; i++) { // check attacks and blocks
 			
 			for (int j = 0; j < root.size(); j++) { // each node is evaluated up to Max_Depth
-				min(root.getChild(j), depth - 1);
+				if(minWinDepth < maxWinDepth){
+					min(root.getChild(j), minWinDepth - 1);
+				} else {
+					min(root.getChild(j), maxWinDepth - 1);
+				}
 				if(root.getChild(j).value == MAX_WINS){ // attack successful
-					if(root.getChild(j).minWinDepth < 6){
-						return root.getChild(j).lastMove;
+					if(root.getChild(j).minWinDepth < maxWinDepth){
+						maxWinDepth = root.getChild(j).minWinDepth;
+						maxWinMove = root.getChild(j).lastMove;
+					}
+					if(minWinDepth < MAX_DEPTH + 1){
+						if(maxWinDepth < minWinDepth){
+							return maxWinMove;
+						}
+					}
+				} else if(root.getChild(j).value == MIN_WINS){ // attack successful
+					if(root.getChild(j).minWinDepth < minWinDepth){
+						minWinDepth = root.getChild(j).minWinDepth;
 					}
 				}
-			} // end for i
+			} // end for j
 			
-			if(root.maxChildNodeValue() == MAX_WINS){ // attack successful
-				return root.maxChildNodes().minWinDepthMove();
+			if(maxWinDepth < minWinDepth){ // attack successful
+				return maxWinMove;
 			} else if(root.minChildNodeValue() == MIN_WINS){
 				if(i > 0) {
 					return best_block;
@@ -380,11 +401,10 @@ public class Connect4 {
 				} else {
 					root.addAll(blocks);
 				}
-			} else {
-				if(root.minChildNodeValue() == 0){
-					if(i > 0){
-						return best_block; // best depth-1 block move
-					}
+			} 
+			else {
+				if(i > 0){
+					return root.minDepthNodeMove(root.maxChildNodes());
 				}
 			}
 		} // end for i
@@ -402,13 +422,16 @@ public class Connect4 {
 		if(depth == 0){
 			return;
 		}
-		MoveSet attack = getMostPromisingMoves(node, ATTACK_MOVES);
-		MoveSet block = getMostPromisingMoves(node, BLOCK_MOVES);
+		boolean block;
+		MoveSet attacks = getMostPromisingMoves(node, ATTACK_MOVES);
+		MoveSet blocks = getMostPromisingMoves(node, BLOCK_MOVES);
 		
-		if(attack.min().getValue() < block.min().getValue()){
-			node.addAll(attack);
+		if(attacks.min().getValue() < blocks.min().getValue()){
+			node.addAll(attacks);
+			block = false;
 		} else {
-			node.addAll(block);
+			node.addAll(blocks);
+			block = true;
 		}
 
 		for(int i = 0; i < node.size(); i++){ // most promising nodes
@@ -425,13 +448,20 @@ public class Connect4 {
 				}
 				node.removeAllChildNodesExcept(node.getChild(i));
 				return;
-			} // end else if
+			} else { // neither player wins 
+				if(block){
+					node.removeAllChildNodes();
+					return;
+				}
+			}
 		} // end for i
 		
-		if(attack.min().getValue() > block.min().getValue()){
-			node.addAll(attack);
+		if(attacks.min().getValue() > blocks.min().getValue()){
+			node.addAll(attacks);
+			block = false;
 		} else {
-			node.addAll(block);
+			node.addAll(blocks);
+			block = true;
 		}
 
 		for(int i = 0; i < node.size(); i++){ // most promising nodes
@@ -441,6 +471,8 @@ public class Connect4 {
 					node.minWinDepth = node.getChild(i).minWinDepth;
 				}
 				node.value = MAX_WINS;
+				node.removeAllChildNodes();
+				return;
 			} else if(node.getChild(i).value == MIN_WINS){
 				node.value = MIN_WINS;
 				if(node.minWinDepth > node.getChild(i).minWinDepth){
@@ -448,7 +480,12 @@ public class Connect4 {
 				}
 				node.removeAllChildNodesExcept(node.getChild(i));
 				return;
-			} // end else if
+			} else { // neither player wins 
+				if(block){
+					node.removeAllChildNodes();
+					return;
+				}
+			} // end else
 		} // end for i
 			
 		node.removeAllChildNodes();
@@ -464,13 +501,16 @@ public class Connect4 {
 		if(depth == 0){
 			return;
 		}
-		MoveSet attack = getMostPromisingMoves(node, ATTACK_MOVES);
-		MoveSet block = getMostPromisingMoves(node, BLOCK_MOVES);
+		boolean block;
+		MoveSet attacks = getMostPromisingMoves(node, ATTACK_MOVES);
+		MoveSet blocks = getMostPromisingMoves(node, BLOCK_MOVES);
 		
-		if(attack.max().getValue() > block.max().getValue()){
-			node.addAll(attack);
+		if(attacks.max().getValue() > blocks.max().getValue()){
+			node.addAll(attacks);
+			block = false;
 		} else {
-			node.addAll(block);
+			node.addAll(blocks);
+			block = true;
 		}
 		
 		for(int i = 0; i < node.size(); i++){ // most promising nodes
@@ -481,18 +521,22 @@ public class Connect4 {
 				}
 				node.value = MIN_WINS;
 			} else if(node.getChild(i).value == MAX_WINS){
-					node.value = MAX_WINS;
+				node.value = MAX_WINS;
 				if(node.minWinDepth > node.getChild(i).minWinDepth){
 					node.minWinDepth = node.getChild(i).minWinDepth;
 				}
 				node.removeAllChildNodesExcept(node.getChild(i));
 				return;
-			} // end else if
+			} else { // neither player wins 
+				return;
+			} // end else
 		} // end for i
-		if(attack.max().getValue() < block.max().getValue()){
-			node.addAll(attack);
+		if(attacks.max().getValue() < blocks.max().getValue()){
+			node.addAll(attacks);
+			block = false;
 		} else {
-			node.addAll(block);
+			node.addAll(blocks);
+			block = true;
 		}
 		
 		for(int i = 0; i < node.size(); i++){ // most promising nodes
@@ -503,6 +547,8 @@ public class Connect4 {
 				}
 				
 				node.value = MIN_WINS;
+				node.removeAllChildNodes();
+				return;
 			} else if(node.getChild(i).value == MAX_WINS){
 				node.value = MAX_WINS;
 				
@@ -512,7 +558,12 @@ public class Connect4 {
 				
 				node.removeAllChildNodesExcept(node.getChild(i));
 				return;
-			} // end else if
+			} else { // neither player wins 
+				if(block){
+					node.removeAllChildNodes();
+					return;
+				}
+			} // end else
 		} // end for i
 			
 		node.removeAllChildNodes();
@@ -639,7 +690,7 @@ public class Connect4 {
 		if(block.contains("bottom")){
 			list.addUnique(new Move(node.lastMove.row + 1, node.lastMove.column, player, new MoveType(MoveType.Type.BLOCK_MOST_SPACE_VERT, value*bottom)));
 		} // end else
-
+//		list.print("list");
 		return list;
 	} // end method blockMostSpace
 
@@ -1329,6 +1380,15 @@ public class Connect4 {
 							} // end if
 						} // end if
 					} else if(board[row][col + 2] == 0){ // right 2	 
+						if(board[row][col + 3] == 0){ // right 3
+							if(board[row][col + 1] == 0){ // right 1													
+								open3Positions.addUnique( new Move(row, col + 1, player, typePreOpen3Horiz)); // right 1
+								open3Positions.addUnique( new Move(row, col + 2, player, typePreOpen3Horiz)); // right 2
+							} else if(board[row][col + 1] == i){ // right 1													
+								
+								open3Positions.addUnique( new Move(row, col + 2, player, typeOpen3Horiz)); // right 2
+							} // end if
+						}
 						if(board[row][col - 2] == 0){ // left 2
 							if(board[row][col + 1] == i){ // right 1													
 								open3Positions.addUnique( new Move(row, col - 1, player, typeOpen3Horiz)); // left 1
@@ -1992,7 +2052,7 @@ public class Connect4 {
 				} // end else if
 			} // end if(col == 7) // column 7
 		} // end if
-
+//		open3Positions.print("open3Positions");
 		return open3Positions;
 	} // end method 
 	
@@ -2046,7 +2106,7 @@ public class Connect4 {
 				} 
 			} // end if
 		} // end for
-		
+//		smallOpenLPositions.print("smallOpenLPositions");
 		return smallOpenLPositions;
 	} // end method smallOpenLPositions
 	
@@ -4538,387 +4598,7 @@ public class Connect4 {
 		return smallOpenLPositions;
 	} // end method
 	
-	private static MoveSet getBigOpenLPositionsList(BoardNode node, boolean block){ 
-		MoveSet bigOpenLPositions = new MoveSet();
-		int value = OPEN_L_VALUE;
-		int player = 2/node.lastMove.player;
-		MoveType type;
-		
-		if(player == 1){ 
-			value = -1*value;
-		}
-		
-		for(Move move : node.moves){
-			int row = move.row;
-			int col = move.column;
-			
-			if(block){
-				if(move.player == player){ // attack
-					continue;
-				} else { // block
-					type = new MoveType(MoveType.Type.BLOCK_BIG_OPEN_L, getMultiplierValue(value, BLOCK_MULT));
-				} // end else 
-			} else {
-				if(move.player != player){ // block
-					continue;
-				} else { // attack
-					type = new MoveType(MoveType.Type.BIG_OPEN_L, value);
-				} // end else
-			} // end else
-						
-			if(row > 0 && row < 7 && col > 0 && row < 7){ // move not on perimeter
-				if(col == 1 || col == 2 || col == 3 || col == 4){
-					bigOpenLPositions.addAll(bigOpenL_columns_1_2_3_4(node, move, type));
-				} // end if
-				if(col == 3 || col == 4 || col == 5 || col == 6){
-					bigOpenLPositions.addAll(bigOpenL_columns_3_4_5_6(node, move, type));
-				} // end if
-			} // end for
-		}
 
-		return bigOpenLPositions;
-	} // end method bigOpenL
-
-	public static MoveSet bigOpenL_columns_1_2_3_4(BoardNode node, Move move, MoveType type){
-		MoveSet bigOpenLPositions = new MoveSet();
-		int[][] board = node.board;
-		int player = 2/node.lastMove.player;
-		int i = move.player;
-		int row = move.row;
-		int col = move.column;
-		
-		if(row == 1 || row == 2){ // row 1-2, column 1
-			if(board[row + 2][col + 2] == i){ // diagonal down 2 right 2	
-				
-				if(board[row][col + 2] == 0){ // right 2
-					
-					if((board[row][col - 1]     == 0 || // left 1
-					    board[row][col - 1]     == i)&& // left 1
-					   (board[row][col + 1]     == 0 || // right 1
-					    board[row][col + 1]     == i)&& // right 1
-					   (board[row][col + 3]     == 0 || // right 3
-					    board[row][col + 3]     == i)&& // right 3
-					   (board[row - 1][col + 2] == 0 || // up 1 right 2
-					    board[row - 1][col + 2] == i)&& // up 1 right 2
-					   (board[row + 1][col + 2] == 0 || // down 1 right 2
-					    board[row + 1][col + 2] == i)&& // down 1 right 2
-					   (board[row + 3][col + 2] == 0 || // down 3 right 2
-					    board[row + 3][col + 2] == i)){ // down 3 right 2
-						
-						bigOpenLPositions.addUnique(new Move(row, col + 2, player, type)); // right 2
-					} // end if
-				} // end if
-				if(board[row + 2][col] == 0){ // down 2
-					
-					if((board[row - 1][col]     == 0 || // up 1
-						board[row - 1][col]     == i)&& // up 1
-					   (board[row + 1][col]     == 0 || // down 1
-						board[row + 1][col]     == i)&& // down 1
-					   (board[row + 3][col]     == 0 || // down 3
-						board[row + 3][col]     == i)&& // down 3
-					   (board[row + 2][col - 1] == 0 || // down 2 left 1 
-						board[row + 2][col - 1] == i)&& // down 2 left 1 
-					   (board[row + 2][col + 1] == 0 || // down 2 right 1 
-						board[row + 2][col + 1] == i)&& // down 2 right 1 
-					   (board[row + 2][col + 3] == 0 || // down 2 right 3 
-						board[row + 2][col + 3] == i)){ // down 2 right 3 
-					  
-						bigOpenLPositions.addUnique(new Move(row + 2, col, player, type)); // down 2
-					} // end if
-				} // end if
-			} // end if
-		} if(row == 5 || row == 6){ // row 5-6, column 1
-		if(board[row - 2][col + 2] == i){ // diagonal up 2 right 2	
-			
-			if(board[row][col + 2] == 0){ // right 2
-				
-				if((board[row][col - 1]     == 0 || // left 1
-					board[row][col - 1]     == i)&& // left 1
-				   (board[row][col + 1]     == 0 || // right 1
-					board[row][col + 1]     == i)&& // right 1
-				   (board[row][col + 3]     == 0 || // right 3
-					board[row][col + 3]     == i)&& // right 3
-				   (board[row + 1][col + 2] == 0 || // down 1 right 2
-					board[row + 1][col + 2] == i)&& // down 1 right 2
-				   (board[row - 1][col + 2] == 0 || // up 1 right 2
-					board[row - 1][col + 2] == i)&& // up 1 right 2
-				   (board[row - 3][col + 2] == 0 || // up 3 right 2
-					board[row - 3][col + 2] == i)){ // up 3 right 2
-					
-					bigOpenLPositions.addUnique(new Move(row, col + 2, player, type)); // right 2
-				} // end if
-			} // end if
-			if(board[row - 2][col] == 0){ // up 2
-				
-				if((board[row + 1][col]     == 0 || // down 1
-					board[row + 1][col]     == i)&& // down 1
-				   (board[row - 1][col]     == 0 || // up 1
-					board[row - 1][col]     == i)&& // up 1
-				   (board[row - 3][col]     == 0 || // up 3
-					board[row - 3][col]     == i)&& // up 3
-				   (board[row - 2][col - 1] == 0 || // up 2 left 1 
-					board[row - 2][col - 1] == i)&& // up 2 left 1 
-				   (board[row - 2][col + 1] == 0 || // up 2 right 1 
-					board[row - 2][col + 1] == i)&& // up 2 right 1 
-				   (board[row - 2][col + 3] == 0 || // up 2 right 3 
-					board[row - 2][col + 3] == i)){ // up 2 right 3 
-				  
-					bigOpenLPositions.addUnique(new Move(row - 2, col, player, type)); // up 2
-				} // end if
-			} // end if
-		} // end if
-	} else if(row == 3 || row == 4){
-			if(board[row + 2][col + 2] == i){ // diagonal down 2 right 2	
-				
-				if(board[row][col + 2] == 0){ // right 2
-					
-					if((board[row][col - 1]     == 0 || // left 1
-					    board[row][col - 1]     == i)&& // left 1
-					   (board[row][col + 1]     == 0 || // right 1
-					    board[row][col + 1]     == i)&& // right 1
-					   (board[row][col + 3]     == 0 || // right 3
-					    board[row][col + 3]     == i)&& // right 3
-					   (board[row - 1][col + 2] == 0 || // up 1 right 2
-					    board[row - 1][col + 2] == i)&& // up 1 right 2
-					   (board[row + 1][col + 2] == 0 || // down 1 right 2
-					    board[row + 1][col + 2] == i)&& // down 1 right 2
-					   (board[row + 3][col + 2] == 0 || // down 3 right 2
-					    board[row + 3][col + 2] == i)){ // down 3 right 2
-					  
-						bigOpenLPositions.addUnique(new Move(row, col + 2, player, type)); // right 2
-					} // end if
-				} // end if
-				if(board[row + 2][col] == 0){ // down 2
-					
-					if((board[row - 1][col]     == 0 || // up 1
-						board[row - 1][col]     == i)&& // up 1
-					   (board[row + 1][col]     == 0 || // down 1
-						board[row + 1][col]     == i)&& // down 1
-					   (board[row + 3][col]     == 0 || // down 3
-						board[row + 3][col]     == i)&& // down 3
-					   (board[row + 2][col - 1] == 0 || // down 2 left 1 
-						board[row + 2][col - 1] == i)&& // down 2 left 1 
-					   (board[row + 2][col + 1] == 0 || // down 2 right 1 
-						board[row + 2][col + 1] == i)&& // down 2 right 1 
-					   (board[row + 2][col + 3] == 0 || // down 2 right 3 
-						board[row + 2][col + 3] == i)){ // down 2 right 3 
-					  
-						bigOpenLPositions.addUnique(new Move(row + 2, col, player, type)); // down 2
-					} // end if
-				} // end if
-			} // end if
-		if(board[row - 2][col + 2] == i){ // diagonal up 2 right 2	
-			
-			if(board[row][col + 2] == 0){ // right 2
-				
-				if((board[row][col - 1]     == 0 || // left 1
-					board[row][col - 1]     == i)&& // left 1
-				   (board[row][col + 1]     == 0 || // right 1
-					board[row][col + 1]     == i)&& // right 1
-				   (board[row][col + 3]     == 0 || // right 3
-					board[row][col + 3]     == i)&& // right 3
-				   (board[row + 1][col + 2] == 0 || // down 1 right 2
-					board[row + 1][col + 2] == i)&& // down 1 right 2
-				   (board[row - 1][col + 2] == 0 || // up 1 right 2
-					board[row - 1][col + 2] == i)&& // up 1 right 2
-				   (board[row - 3][col + 2] == 0 || // up 3 right 2
-					board[row - 3][col + 2] == i)){ // up 3 right 2
-					
-					bigOpenLPositions.addUnique(new Move(row, col + 2, player, type)); // right 2
-				} // end if
-			} // end if
-			if(board[row - 2][col] == 0){ // up 2
-				
-				if((board[row + 1][col]     == 0 || // down 1
-					board[row + 1][col]     == i)&& // down 1
-				   (board[row - 1][col]     == 0 || // up 1
-					board[row - 1][col]     == i)&& // up 1
-				   (board[row - 3][col]     == 0 || // up 3
-					board[row - 3][col]     == i)&& // up 3
-				   (board[row - 2][col - 1] == 0 || // up 2 left 1 
-					board[row - 2][col - 1] == i)&& // up 2 left 1 
-				   (board[row - 2][col + 1] == 0 || // up 2 right 1 
-					board[row - 2][col + 1] == i)&& // up 2 right 1 
-				   (board[row - 2][col + 3] == 0 || // up 2 right 3 
-					board[row - 2][col + 3] == i)){ // up 2 right 3 
-					
-					bigOpenLPositions.addUnique(new Move(row - 2, col, player, type)); // up 2
-				} // end if
-			} // end if
-		} // end if
-	} // end if
-	return bigOpenLPositions;
-} // end class column1B
-	
-	public static MoveSet bigOpenL_columns_3_4_5_6(BoardNode node, Move move, MoveType type){
-		MoveSet bigOpenLPositions = new MoveSet();
-		int[][] board = node.board;
-		int player = 2/node.lastMove.player;
-		int i = move.player;
-		int row = move.row;
-		int col = move.column;
-		if(row == 1 || row == 2){ // row 1-2, column 6
-			if(board[row + 2][col - 2] == i){ // diagonal down 2 left 2	
-				
-				if(board[row][col - 2] == 0){ // left 2
-					
-					if((board[row][col + 1]     == 0 || // right 1
-					    board[row][col + 1]     == i)&& // right 1
-					   (board[row][col - 1]     == 0 || // left 1
-					    board[row][col - 1]     == i)&& // left 1
-					   (board[row][col - 3]     == 0 || // left 3
-					    board[row][col - 3]     == i)&& // left 3
-					   (board[row - 1][col - 2] == 0 || // up 1 left 2
-					    board[row - 1][col - 2] == i)&& // up 1 left 2
-					   (board[row + 1][col - 2] == 0 || // down 1 left 2
-					    board[row + 1][col - 2] == i)&& // down 1 left 2
-					   (board[row + 3][col - 2] == 0 || // down 3 left 2
-					    board[row + 3][col - 2] == i)){ // down 3 left 2
-						
-						bigOpenLPositions.addUnique(new Move(row, col - 2, player, type)); // left 2
-					} // end if
-				} // end if
-				if(board[row + 2][col] == 0){ // down 2
-					
-					if((board[row - 1][col]     == 0 || // up 1
-						board[row - 1][col]     == i)&& // up 1
-					   (board[row + 1][col]     == 0 || // down 1
-						board[row + 1][col]     == i)&& // down 1
-					   (board[row + 3][col]     == 0 || // down 3
-						board[row + 3][col]     == i)&& // down 3
-					   (board[row + 2][col + 1] == 0 || // down 2 right 1 
-						board[row + 2][col + 1] == i)&& // down 2 right 1 
-					   (board[row + 2][col - 1] == 0 || // down 2 left 1 
-						board[row + 2][col - 1] == i)&& // down 2 left 1 
-					   (board[row + 2][col - 3] == 0 || // down 2 left 3 
-						board[row + 2][col - 3] == i)){ // down 2 left 3 
-					  
-						bigOpenLPositions.addUnique(new Move(row + 2, col, player, type)); // down 2
-					} // end if
-				} // end if
-			} // end if
-		} if(row == 5 || row == 6){ // row 5-6, column 6
-			if(board[row - 2][col - 2] == i){ // diagonal up 2 left 2	
-				
-				if(board[row][col - 2] == 0){ // left 2
-					
-					if((board[row][col + 1]     == 0 || // right 1
-						board[row][col + 1]     == i)&& // right 1
-					   (board[row][col - 1]     == 0 || // left 1
-						board[row][col - 1]     == i)&& // left 1
-					   (board[row][col - 3]     == 0 || // left 3
-						board[row][col - 3]     == i)&& // left 3
-					   (board[row + 1][col - 2] == 0 || // down 1 left 2
-						board[row + 1][col - 2] == i)&& // down 1 left 2
-					   (board[row - 1][col - 2] == 0 || // up 1 left 2
-						board[row - 1][col - 2] == i)&& // up 1 left 2
-					   (board[row - 3][col - 2] == 0 || // up 3 left 2
-						board[row - 3][col - 2] == i)){ // up 3 left 2
-						
-						bigOpenLPositions.addUnique(new Move(row, col - 2, player, type)); // left 2
-					} // end if
-				} // end if
-				if(board[row - 2][col] == 0){ // up 2
-					
-					if((board[row + 1][col]     == 0 || // down 1
-						board[row + 1][col]     == i)&& // down 1
-					   (board[row - 1][col]     == 0 || // up 1
-						board[row - 1][col]     == i)&& // up 1
-					   (board[row - 3][col]     == 0 || // up 3
-						board[row - 3][col]     == i)&& // up 3
-					   (board[row - 2][col + 1] == 0 || // up 2 right 1 
-						board[row - 2][col + 1] == i)&& // up 2 right 1 
-					   (board[row - 2][col - 1] == 0 || // up 2 left 1 
-						board[row - 2][col - 1] == i)&& // up 2 left 1 
-					   (board[row - 2][col - 3] == 0 || // up 2 left 3 
-						board[row - 2][col - 3] == i)){ // up 2 left 3 
-						
-						bigOpenLPositions.addUnique(new Move(row - 2, col, player, type)); // up 2
-					} // end if
-				} // end if
-			} // end if
-		} else if(row == 3 || row == 4){
-				if(board[row + 2][col - 2] == i){ // diagonal down 2 left 2	
-					
-					if(board[row][col - 2] == 0){ // left 2
-						
-						if((board[row][col + 1]     == 0 || // right 1
-						    board[row][col + 1]     == i)&& // right 1
-						   (board[row][col - 1]     == 0 || // left 1
-						    board[row][col - 1]     == i)&& // left 1
-						   (board[row][col - 3]     == 0 || // left 3
-						    board[row][col - 3]     == i)&& // left 3
-						   (board[row - 1][col - 2] == 0 || // up 1 left 2
-						    board[row - 1][col - 2] == i)&& // up 1 left 2
-						   (board[row + 1][col - 2] == 0 || // down 1 left 2
-						    board[row + 1][col - 2] == i)&& // down 1 left 2
-						   (board[row + 3][col - 2] == 0 || // down 3 left 2
-						    board[row + 3][col - 2] == i)){ // down 3 left 2
-							
-							bigOpenLPositions.addUnique(new Move(row, col - 2, player, type)); // left 2
-						} // end if
-					} // end if
-					if(board[row + 2][col] == 0){ // down 2
-						
-						if((board[row - 1][col]     == 0 || // up 1
-							board[row - 1][col]     == i)&& // up 1
-						   (board[row + 1][col]     == 0 || // down 1
-							board[row + 1][col]     == i)&& // down 1
-						   (board[row + 3][col]     == 0 || // down 3
-							board[row + 3][col]     == i)&& // down 3
-						   (board[row + 2][col + 1] == 0 || // down 2 right 1 
-							board[row + 2][col + 1] == i)&& // down 2 right 1 
-						   (board[row + 2][col - 1] == 0 || // down 2 left 1 
-							board[row + 2][col - 1] == i)&& // down 2 left 1 
-						   (board[row + 2][col - 3] == 0 || // down 2 left 3 
-							board[row + 2][col - 3] == i)){ // down 2 left 3 
-						  
-							bigOpenLPositions.addUnique(new Move(row + 2, col, player, type)); // down 2
-						} // end if
-					} // end if
-				} // end if
-			if(board[row - 2][col - 2] == i){ // diagonal up 2 left 2	
-				
-				if(board[row][col - 2] == 0){ // left 2
-					
-					if((board[row][col + 1]     == 0 || // right 1
-						board[row][col + 1]     == i)&& // right 1
-					   (board[row][col - 1]     == 0 || // left 1
-						board[row][col - 1]     == i)&& // left 1
-					   (board[row][col - 3]     == 0 || // left 3
-						board[row][col - 3]     == i)&& // left 3
-					   (board[row + 1][col - 2] == 0 || // down 1 left 2
-						board[row + 1][col - 2] == i)&& // down 1 left 2
-					   (board[row - 1][col - 2] == 0 || // up 1 left 2
-						board[row - 1][col - 2] == i)&& // up 1 left 2
-					   (board[row - 3][col - 2] == 0 || // up 3 left 2
-						board[row - 3][col - 2] == i)){ // up 3 left 2
-
-						bigOpenLPositions.addUnique(new Move(row, col - 2, player, type)); // left 2
-					} // end if
-				} // end if
-				if(board[row - 2][col] == 0){ // up 2
-					
-					if((board[row + 1][col]     == 0 || // down 1
-						board[row + 1][col]     == i)&& // down 1
-					   (board[row - 1][col]     == 0 || // up 1
-						board[row - 1][col]     == i)&& // up 1
-					   (board[row - 3][col]     == 0 || // up 3
-						board[row - 3][col]     == i)&& // up 3
-					   (board[row - 2][col + 1] == 0 || // up 2 right 1 
-						board[row - 2][col + 1] == i)&& // up 2 right 1 
-					   (board[row - 2][col - 1] == 0 || // up 2 left 1 
-						board[row - 2][col - 1] == i)&& // up 2 left 1 
-					   (board[row - 2][col - 3] == 0 || // up 2 left 3 
-						board[row - 2][col - 3] == i)){ // up 2 left 3 
-						
-						bigOpenLPositions.addUnique(new Move(row - 2, col, player, type)); // up 2
-					} // end if
-				} // end if
-			} // end if
-		} // end if
-		return bigOpenLPositions;
-	} // end method column6B
 
 	public static MoveSet getPreSmallOpenLPositionsList(BoardNode node, boolean block){
 		MoveSet preSmallOpenLPositions = new MoveSet();
@@ -4960,7 +4640,7 @@ public class Connect4 {
 				} // end if
 			 } // end if
 		} // end for
-
+//		preSmallOpenLPositions.print("preSmallOpenLPositions");
 		return preSmallOpenLPositions;
 	} // end method preOpenL
 	
@@ -5612,6 +5292,545 @@ public class Connect4 {
 	} // end method
  // end method column6PreOpenL xx
 	
+	private static MoveSet getBigOpenLPositionsList(BoardNode node, boolean block){ 
+		MoveSet bigOpenLPositions = new MoveSet();
+		int value = OPEN_L_VALUE;
+		int player = 2/node.lastMove.player;
+		MoveType type;
+		
+		if(player == 1){ 
+			value = -1*value;
+		}
+		
+		for(Move move : node.moves){
+			int row = move.row;
+			int col = move.column;
+			
+			if(block){
+				if(move.player == player){ // attack
+					continue;
+				} else { // block
+					type = new MoveType(MoveType.Type.BLOCK_BIG_OPEN_L, getMultiplierValue(value, BLOCK_MULT));
+				} // end else 
+			} else {
+				if(move.player != player){ // block
+					continue;
+				} else { // attack
+					type = new MoveType(MoveType.Type.BIG_OPEN_L, value);
+				} // end else
+			} // end else
+						
+			if(row > 0 && row < 7 && col > 0 && row < 7){ // move not on perimeter
+				if(col == 1 || col == 2 || col == 3 || col == 4){
+					bigOpenLPositions.addAll(bigOpenL_columns_1_2_3_4(node, move, type));
+				} // end if
+				if(col == 3 || col == 4 || col == 5 || col == 6){
+					bigOpenLPositions.addAll(bigOpenL_columns_3_4_5_6(node, move, type));
+				} // end if
+			} // end for
+		}
+//		bigOpenLPositions.print("bigOpenLPositions");
+		return bigOpenLPositions;
+	} // end method bigOpenL
+
+	public static MoveSet bigOpenL_columns_1_2_3_4(BoardNode node, Move move, MoveType type){
+		MoveSet bigOpenLPositions = new MoveSet();
+		int[][] board = node.board;
+		int player = 2/node.lastMove.player;
+		int i = move.player;
+		int row = move.row;
+		int col = move.column;
+		boolean block;
+
+		if(type.toString().contains("BLOCK")){
+			block = true;
+		} else {
+			block = false;
+		}
+		
+		if(row == 1 || row == 2){ // row 1-2, column 1
+			if(board[row + 2][col + 2] == i){ // diagonal down 2 right 2	
+				
+				if(board[row][col + 2] == 0){ // right 2
+					
+					if((board[row][col - 1]     == 0 || // left 1
+					    board[row][col - 1]     == i)|| // left 1
+					   (board[row][col + 3]     == 0 || // right 3
+					    board[row][col + 3]     == i)&& // right 3
+					   (board[row][col + 1]     == 0 || // right 1
+					    board[row][col + 1]     == i)&& // right 1
+					   (board[row - 1][col + 2] == 0 || // up 1 right 2
+					    board[row - 1][col + 2] == i)&& // up 1 right 2
+					   (board[row + 1][col + 2] == 0 || // down 1 right 2
+					    board[row + 1][col + 2] == i)&& // down 1 right 2
+					   (board[row + 3][col + 2] == 0 || // down 3 right 2
+					    board[row + 3][col + 2] == i)){ // down 3 right 2
+						
+						if(block){
+							if(board[row][col + 1]     == 0 ){ // right 1
+								bigOpenLPositions.addUnique(new Move(row, col + 1, player, type)); // right 1
+							}
+							if(board[row + 1][col + 2] == 0 ){ // down 1 right 2
+								bigOpenLPositions.addUnique(new Move(row + 1, col + 2, player, type)); // down 1 right 2
+							}
+						}
+						bigOpenLPositions.addUnique(new Move(row, col + 2, player, type)); // right 2
+					} // end if
+				} // end if
+				if(board[row + 2][col] == 0){ // down 2
+					
+					if((board[row - 1][col]     == 0 || // up 1
+						board[row - 1][col]     == i)|| // up 1
+					   (board[row + 3][col]     == 0 || // down 3
+						board[row + 3][col]     == i)&& // down 3
+					   (board[row + 1][col]     == 0 || // down 1
+						board[row + 1][col]     == i)&& // down 1
+					   (board[row + 2][col - 1] == 0 || // down 2 left 1 
+						board[row + 2][col - 1] == i)&& // down 2 left 1 
+					   (board[row + 2][col + 1] == 0 || // down 2 right 1 
+						board[row + 2][col + 1] == i)&& // down 2 right 1 
+					   (board[row + 2][col + 3] == 0 || // down 2 right 3 
+						board[row + 2][col + 3] == i)){ // down 2 right 3 
+						
+						if(block){
+							if(board[row + 1][col]     == 0 ){ // down 1
+								bigOpenLPositions.addUnique(new Move(row + 1, col, player, type)); // down 1
+							}
+							if(board[row + 2][col + 1] == 0 ){ // down 2 right 1 
+								bigOpenLPositions.addUnique(new Move(row + 2, col + 1, player, type)); // right 1 down 2
+							}
+						}
+
+						bigOpenLPositions.addUnique(new Move(row + 2, col, player, type)); // down 2
+					} // end if
+				} // end if
+			} // end if
+		} if(row == 5 || row == 6){ // row 5-6, column 1
+		if(board[row - 2][col + 2] == i){ // diagonal up 2 right 2	
+			
+			if(board[row][col + 2] == 0){ // right 2
+				
+				if((board[row][col - 1]     == 0 || // left 1
+					board[row][col - 1]     == i)|| // left 1
+				   (board[row][col + 3]     == 0 || // right 3
+					board[row][col + 3]     == i)&& // right 3
+				   (board[row][col + 1]     == 0 || // right 1
+					board[row][col + 1]     == i)&& // right 1
+				   (board[row + 1][col + 2] == 0 || // down 1 right 2
+					board[row + 1][col + 2] == i)&& // down 1 right 2
+				   (board[row - 1][col + 2] == 0 || // up 1 right 2
+					board[row - 1][col + 2] == i)&& // up 1 right 2
+				   (board[row - 3][col + 2] == 0 || // up 3 right 2
+					board[row - 3][col + 2] == i)){ // up 3 right 2
+				
+					if(block){
+						if(board[row][col + 1]     == 0 ){ // right 1
+							bigOpenLPositions.addUnique(new Move(row, col + 1, player, type)); // right 1
+						}
+						if(board[row - 1][col + 2] == 0 ){ // up 1 right 2
+							bigOpenLPositions.addUnique(new Move(row - 1, col + 2, player, type)); // up 1 right 2
+						}
+					} // end if
+					bigOpenLPositions.addUnique(new Move(row, col + 2, player, type)); // right 2
+				} // end if
+			} // end if
+			if(board[row - 2][col] == 0){ // up 2
+				
+				if((board[row + 1][col]     == 0 || // down 1
+					board[row + 1][col]     == i)|| // down 1
+				   (board[row - 3][col]     == 0 || // up 3
+					board[row - 3][col]     == i)&& // up 3
+				   (board[row - 1][col]     == 0 || // up 1
+					board[row - 1][col]     == i)&& // up 1
+				   (board[row - 2][col - 1] == 0 || // up 2 left 1 
+					board[row - 2][col - 1] == i)&& // up 2 left 1 
+				   (board[row - 2][col + 1] == 0 || // up 2 right 1 
+					board[row - 2][col + 1] == i)&& // up 2 right 1 
+				   (board[row - 2][col + 3] == 0 || // up 2 right 3 
+					board[row - 2][col + 3] == i)){ // up 2 right 3 
+				  
+					if(block){
+						if(board[row - 1][col]     == 0 ){ // up 1
+							bigOpenLPositions.addUnique(new Move(row - 1, col, player, type)); // up 1
+						}
+						if(board[row - 2][col + 1] == 0 ){ // up 2 right 1 
+							bigOpenLPositions.addUnique(new Move(row - 2, col + 1, player, type)); // right 1 up 2
+						}
+					} // end if
+
+					bigOpenLPositions.addUnique(new Move(row - 2, col, player, type)); // up 2
+				} // end if
+			} // end if
+		} // end if
+	} else if(row == 3 || row == 4){
+			if(board[row + 2][col + 2] == i){ // diagonal down 2 right 2	
+				
+				if(board[row][col + 2] == 0){ // right 2
+					
+					if((board[row][col - 1]     == 0 || // left 1
+					    board[row][col - 1]     == i)|| // left 1
+					   (board[row][col + 3]     == 0 || // right 3
+						board[row][col + 3]     == i)&& // right 3
+					   (board[row][col + 1]     == 0 || // right 1
+					    board[row][col + 1]     == i)&& // right 1
+					   (board[row - 1][col + 2] == 0 || // up 1 right 2
+					    board[row - 1][col + 2] == i)&& // up 1 right 2
+					   (board[row + 1][col + 2] == 0 || // down 1 right 2
+					    board[row + 1][col + 2] == i)&& // down 1 right 2
+					   (board[row + 3][col + 2] == 0 || // down 3 right 2
+					    board[row + 3][col + 2] == i)){ // down 3 right 2
+					  
+						if(block){
+							if(board[row][col + 1]     == 0 ){ // right 1
+								bigOpenLPositions.addUnique(new Move(row, col + 1, player, type)); // right 1
+							}
+							if(board[row + 1][col + 2] == 0 ){ // down 1 right 2
+								bigOpenLPositions.addUnique(new Move(row + 1, col + 2, player, type)); // down 1 right 2
+							}
+						} // end if
+						
+						bigOpenLPositions.addUnique(new Move(row, col + 2, player, type)); // right 2
+					} // end if
+				} // end if
+				if(board[row + 2][col] == 0){ // down 2
+					
+					if((board[row - 1][col]     == 0 || // up 1
+						board[row - 1][col]     == i)|| // up 1
+					   (board[row + 3][col]     == 0 || // down 3
+						board[row + 3][col]     == i)&& // down 3
+					   (board[row + 1][col]     == 0 || // down 1
+						board[row + 1][col]     == i)&& // down 1
+					   (board[row + 2][col - 1] == 0 || // down 2 left 1 
+						board[row + 2][col - 1] == i)&& // down 2 left 1 
+					   (board[row + 2][col + 1] == 0 || // down 2 right 1 
+						board[row + 2][col + 1] == i)&& // down 2 right 1 
+					   (board[row + 2][col + 3] == 0 || // down 2 right 3 
+						board[row + 2][col + 3] == i)){ // down 2 right 3 
+					  
+						if(block){
+							if(board[row + 1][col]     == 0 ){ // down 1
+								bigOpenLPositions.addUnique(new Move(row + 1, col, player, type)); // down 1
+							}
+							if(board[row + 2][col + 1] == 0 ){ // down 2 right 1 
+								bigOpenLPositions.addUnique(new Move(row + 2, col + 1, player, type)); // right 1 down 2
+							}
+						} // end if
+						
+						bigOpenLPositions.addUnique(new Move(row + 2, col, player, type)); // down 2
+					} // end if
+				} // end if
+			} // end if
+		if(board[row - 2][col + 2] == i){ // diagonal up 2 right 2	
+			
+			if(board[row][col + 2] == 0){ // right 2
+				
+				if((board[row][col - 1]     == 0 || // left 1
+					board[row][col - 1]     == i)|| // left 1
+				   (board[row][col + 3]     == 0 || // right 3
+					board[row][col + 3]     == i)&& // right 3
+				   (board[row][col + 1]     == 0 || // right 1
+					board[row][col + 1]     == i)&& // right 1
+				   (board[row + 1][col + 2] == 0 || // down 1 right 2
+					board[row + 1][col + 2] == i)&& // down 1 right 2
+				   (board[row - 1][col + 2] == 0 || // up 1 right 2
+					board[row - 1][col + 2] == i)&& // up 1 right 2
+				   (board[row - 3][col + 2] == 0 || // up 3 right 2
+					board[row - 3][col + 2] == i)){ // up 3 right 2
+					
+					if(block){
+						if(board[row][col + 1]     == 0 ){ // right 1
+							bigOpenLPositions.addUnique(new Move(row, col + 1, player, type)); // right 1
+						}
+						if(board[row - 1][col + 2] == 0 ){ // up 1 right 2
+							bigOpenLPositions.addUnique(new Move(row - 1, col + 2, player, type)); // up 1 right 2
+						}
+					} // end if
+					
+					bigOpenLPositions.addUnique(new Move(row, col + 2, player, type)); // right 2
+				} // end if
+			} // end if
+			if(board[row - 2][col] == 0){ // up 2
+				
+				if((board[row + 1][col]     == 0 || // down 1
+					board[row + 1][col]     == i)|| // down 1
+				   (board[row - 3][col]     == 0 || // up 3
+					board[row - 3][col]     == i)&& // up 3
+				   (board[row - 1][col]     == 0 || // up 1
+					board[row - 1][col]     == i)&& // up 1
+				   (board[row - 2][col - 1] == 0 || // up 2 left 1 
+					board[row - 2][col - 1] == i)&& // up 2 left 1 
+				   (board[row - 2][col + 1] == 0 || // up 2 right 1 
+					board[row - 2][col + 1] == i)&& // up 2 right 1 
+				   (board[row - 2][col + 3] == 0 || // up 2 right 3 
+					board[row - 2][col + 3] == i)){ // up 2 right 3 
+					
+					if(block){
+						if(board[row - 1][col]     == 0 ){ // up 1
+							bigOpenLPositions.addUnique(new Move(row - 1, col, player, type)); // up 1
+						}
+						if(board[row - 2][col + 1] == 0 ){ // up 2 right 1 
+							bigOpenLPositions.addUnique(new Move(row - 2, col + 1, player, type)); // right 1 up 2
+						}
+					} // end if
+					
+					bigOpenLPositions.addUnique(new Move(row - 2, col, player, type)); // up 2
+				} // end if
+			} // end if
+		} // end if
+	} // end if
+	return bigOpenLPositions;
+} // end class column1B
+	
+	public static MoveSet bigOpenL_columns_3_4_5_6(BoardNode node, Move move, MoveType type){
+		MoveSet bigOpenLPositions = new MoveSet();
+		int[][] board = node.board;
+		int player = 2/node.lastMove.player;
+		int i = move.player;
+		int row = move.row;
+		int col = move.column;
+		boolean block;
+		
+		if(type.toString().contains("BLOCK")){
+			block = true;
+		} else {
+			block = false;
+		}
+		
+		if(row == 1 || row == 2){ // row 1-2, column 6
+			if(board[row + 2][col - 2] == i){ // diagonal down 2 left 2	
+				
+				if(board[row][col - 2] == 0){ // left 2
+					
+					if((board[row][col + 1]     == 0 || // right 1
+					    board[row][col + 1]     == i)|| // right 1
+					   (board[row][col - 3]     == 0 || // left 3
+						board[row][col - 3]     == i)&& // left 3
+					   (board[row][col - 1]     == 0 || // left 1
+					    board[row][col - 1]     == i)&& // left 1
+					   (board[row - 1][col - 2] == 0 || // up 1 left 2
+					    board[row - 1][col - 2] == i)&& // up 1 left 2
+					   (board[row + 1][col - 2] == 0 || // down 1 left 2
+					    board[row + 1][col - 2] == i)&& // down 1 left 2
+					   (board[row + 3][col - 2] == 0 || // down 3 left 2
+					    board[row + 3][col - 2] == i)){ // down 3 left 2
+						
+						if(block){
+							if(board[row][col - 1]     == 0 ){ // left 1
+								bigOpenLPositions.addUnique(new Move(row, col - 1, player, type)); // left 1
+							}
+							if(board[row + 1][col - 2] == 0 ){ // down 1 left 2
+								bigOpenLPositions.addUnique(new Move(row + 1, col - 2, player, type)); // down 1 left 2
+							}
+						} // end if
+						
+						bigOpenLPositions.addUnique(new Move(row, col - 2, player, type)); // left 2
+					} // end if
+				} // end if
+				if(board[row + 2][col] == 0){ // down 2
+					
+					if((board[row - 1][col]     == 0 || // up 1
+						board[row - 1][col]     == i)|| // up 1
+					   (board[row + 3][col]     == 0 || // down 3
+						board[row + 3][col]     == i)&& // down 3
+					   (board[row + 1][col]     == 0 || // down 1
+						board[row + 1][col]     == i)&& // down 1
+					   (board[row + 2][col + 1] == 0 || // down 2 right 1 
+						board[row + 2][col + 1] == i)&& // down 2 right 1 
+					   (board[row + 2][col - 1] == 0 || // down 2 left 1 
+						board[row + 2][col - 1] == i)&& // down 2 left 1 
+					   (board[row + 2][col - 3] == 0 || // down 2 left 3 
+						board[row + 2][col - 3] == i)){ // down 2 left 3 
+					  
+						if(block){
+							if(board[row + 1][col]     == 0 ){ // down 1
+								bigOpenLPositions.addUnique(new Move(row + 1, col, player, type)); // down 1
+							}
+							if(board[row + 2][col - 1] == 0 ){ // down 2 left 1 
+								bigOpenLPositions.addUnique(new Move(row + 2, col - 1, player, type)); // left 1 down 2
+							}
+						}
+						
+						bigOpenLPositions.addUnique(new Move(row + 2, col, player, type)); // down 2
+					} // end if
+				} // end if
+			} // end if
+		} if(row == 5 || row == 6){ // row 5-6, column 6
+			if(board[row - 2][col - 2] == i){ // diagonal up 2 left 2	
+				
+				if(board[row][col - 2] == 0){ // left 2
+					
+					if((board[row][col + 1]     == 0 || // right 1
+						board[row][col + 1]     == i)|| // right 1
+					   (board[row][col - 3]     == 0 || // left 3
+						board[row][col - 3]     == i)&& // left 3
+					   (board[row][col - 1]     == 0 || // left 1
+						board[row][col - 1]     == i)&& // left 1
+					   (board[row + 1][col - 2] == 0 || // down 1 left 2
+						board[row + 1][col - 2] == i)&& // down 1 left 2
+					   (board[row - 1][col - 2] == 0 || // up 1 left 2
+						board[row - 1][col - 2] == i)&& // up 1 left 2
+					   (board[row - 3][col - 2] == 0 || // up 3 left 2
+						board[row - 3][col - 2] == i)){ // up 3 left 2
+						
+						if(block){
+							if(board[row][col - 1]     == 0 ){ // left 1
+								bigOpenLPositions.addUnique(new Move(row, col - 1, player, type)); // left 1
+							}
+							if(board[row - 1][col - 2] == 0 ){ // up 1 left 2
+								bigOpenLPositions.addUnique(new Move(row - 1, col - 2, player, type)); // up 1 left 2
+							}
+						} // end if
+						
+						bigOpenLPositions.addUnique(new Move(row, col - 2, player, type)); // left 2
+					} // end if
+				} // end if
+				if(board[row - 2][col] == 0){ // up 2
+					
+					if((board[row + 1][col]     == 0 || // down 1
+						board[row + 1][col]     == i)|| // down 1
+					   (board[row - 3][col]     == 0 || // up 3
+						board[row - 3][col]     == i)&& // up 3
+					   (board[row - 1][col]     == 0 || // up 1
+						board[row - 1][col]     == i)&& // up 1
+					   (board[row - 2][col + 1] == 0 || // up 2 right 1 
+						board[row - 2][col + 1] == i)&& // up 2 right 1 
+					   (board[row - 2][col - 1] == 0 || // up 2 left 1 
+						board[row - 2][col - 1] == i)&& // up 2 left 1 
+					   (board[row - 2][col - 3] == 0 || // up 2 left 3 
+						board[row - 2][col - 3] == i)){ // up 2 left 3 
+						
+						if(block){
+							if(board[row - 1][col]     == 0 ){ // up 1
+								bigOpenLPositions.addUnique(new Move(row - 1, col, player, type)); // up 1
+							}
+							if(board[row - 2][col - 1] == 0 ){ // up 2 left 1 
+								bigOpenLPositions.addUnique(new Move(row - 2, col - 1, player, type)); // left 1 up 2
+							}
+						} // end if
+						
+						bigOpenLPositions.addUnique(new Move(row - 2, col, player, type)); // up 2
+					} // end if
+				} // end if
+			} // end if
+		} else if(row == 3 || row == 4){
+				if(board[row + 2][col - 2] == i){ // diagonal down 2 left 2	
+					
+					if(board[row][col - 2] == 0){ // left 2
+						
+						if((board[row][col + 1]     == 0 || // right 1
+						    board[row][col + 1]     == i)|| // right 1
+						   (board[row][col - 3]     == 0 || // left 3
+							board[row][col - 3]     == i)&& // left 3
+						   (board[row][col - 1]     == 0 || // left 1
+						    board[row][col - 1]     == i)&& // left 1
+						   (board[row - 1][col - 2] == 0 || // up 1 left 2
+						    board[row - 1][col - 2] == i)&& // up 1 left 2
+						   (board[row + 1][col - 2] == 0 || // down 1 left 2
+						    board[row + 1][col - 2] == i)&& // down 1 left 2
+						   (board[row + 3][col - 2] == 0 || // down 3 left 2
+						    board[row + 3][col - 2] == i)){ // down 3 left 2
+							
+							if(block){
+								if(board[row][col - 1]     == 0 ){ // left 1
+									bigOpenLPositions.addUnique(new Move(row, col - 1, player, type)); // left 1
+								}
+								if(board[row + 1][col - 2] == 0 ){ // down 1 left 2
+									bigOpenLPositions.addUnique(new Move(row + 1, col - 2, player, type)); // down 1 left 2
+								}
+							} // end if
+							
+							bigOpenLPositions.addUnique(new Move(row, col - 2, player, type)); // left 2
+						} // end if
+					} // end if
+					if(board[row + 2][col] == 0){ // down 2
+						
+						if((board[row - 1][col]     == 0 || // up 1
+							board[row - 1][col]     == i)|| // up 1
+						   (board[row + 3][col]     == 0 || // down 3
+							board[row + 3][col]     == i)&& // down 3
+						   (board[row + 1][col]     == 0 || // down 1
+							board[row + 1][col]     == i)&& // down 1
+						   (board[row + 2][col + 1] == 0 || // down 2 right 1 
+							board[row + 2][col + 1] == i)&& // down 2 right 1 
+						   (board[row + 2][col - 1] == 0 || // down 2 left 1 
+							board[row + 2][col - 1] == i)&& // down 2 left 1 
+						   (board[row + 2][col - 3] == 0 || // down 2 left 3 
+							board[row + 2][col - 3] == i)){ // down 2 left 3 
+						  
+							if(block){
+								if(board[row + 1][col]     == 0 ){ // down 1
+									bigOpenLPositions.addUnique(new Move(row + 1, col, player, type)); // down 1
+								}
+								if(board[row + 2][col - 1] == 0 ){ // down 2 left 1 
+									bigOpenLPositions.addUnique(new Move(row + 2, col - 1, player, type)); // left 1 down 2
+								}
+							} // end if
+							
+							bigOpenLPositions.addUnique(new Move(row + 2, col, player, type)); // down 2
+						} // end if
+					} // end if
+				} // end if
+			if(board[row - 2][col - 2] == i){ // diagonal up 2 left 2	
+				
+				if(board[row][col - 2] == 0){ // left 2
+					
+					if((board[row][col + 1]     == 0 || // right 1
+						board[row][col + 1]     == i)|| // right 1
+					   (board[row][col - 3]     == 0 || // left 3
+						board[row][col - 3]     == i)&& // left 3
+					   (board[row][col - 1]     == 0 || // left 1
+						board[row][col - 1]     == i)&& // left 1
+					   (board[row + 1][col - 2] == 0 || // down 1 left 2
+						board[row + 1][col - 2] == i)&& // down 1 left 2
+					   (board[row - 1][col - 2] == 0 || // up 1 left 2
+						board[row - 1][col - 2] == i)&& // up 1 left 2
+					   (board[row - 3][col - 2] == 0 || // up 3 left 2
+						board[row - 3][col - 2] == i)){ // up 3 left 2
+
+						if(block){
+							if(board[row][col - 1]     == 0 ){ // left 1
+								bigOpenLPositions.addUnique(new Move(row, col - 1, player, type)); // left 1
+							}
+							if(board[row - 1][col - 2] == 0 ){ // up 1 left 2
+								bigOpenLPositions.addUnique(new Move(row - 1, col - 2, player, type)); // up 1 left 2
+							}
+						} // end if
+						
+						bigOpenLPositions.addUnique(new Move(row, col - 2, player, type)); // left 2
+					} // end if
+				} // end if
+				if(board[row - 2][col] == 0){ // up 2
+					
+					if((board[row + 1][col]     == 0 || // down 1
+						board[row + 1][col]     == i)|| // down 1
+					   (board[row - 3][col]     == 0 || // up 3
+						board[row - 3][col]     == i)&& // up 3
+					   (board[row - 1][col]     == 0 || // up 1
+						board[row - 1][col]     == i)&& // up 1
+					   (board[row - 2][col + 1] == 0 || // up 2 right 1 
+						board[row - 2][col + 1] == i)&& // up 2 right 1 
+					   (board[row - 2][col - 1] == 0 || // up 2 left 1 
+						board[row - 2][col - 1] == i)&& // up 2 left 1 
+					   (board[row - 2][col - 3] == 0 || // up 2 left 3 
+						board[row - 2][col - 3] == i)){ // up 2 left 3 
+						
+						if(block){
+							if(board[row - 1][col]     == 0 ){ // up 1
+								bigOpenLPositions.addUnique(new Move(row - 1, col, player, type)); // up 1
+							}
+							if(board[row - 2][col - 1] == 0 ){ // up 2 left 1 
+								bigOpenLPositions.addUnique(new Move(row - 2, col - 1, player, type)); // left 1 up 2
+							}
+						} // end if
+						
+						bigOpenLPositions.addUnique(new Move(row - 2, col, player, type)); // up 2
+					} // end if
+				} // end if
+			} // end if
+		} // end if
+		return bigOpenLPositions;
+	} // end method column6B
+	
 	public static MoveSet getPreBigOpenLPositionsList(BoardNode node, boolean block){
 		MoveSet preBigOpenLPositions = new MoveSet();
 		int player = 2/node.lastMove.player;
@@ -5655,7 +5874,7 @@ public class Connect4 {
 				} // end if
 			 } // end if
 		} // end for
-
+//		preBigOpenLPositions.print("preBigOpenLPositions");
 		return preBigOpenLPositions;
 	} // end method preOpenL
 	
@@ -6088,7 +6307,7 @@ public class Connect4 {
 			
 			threeOfFourPositions.addAll(threeOfFour_AllColumns(node, move, vertical));
 		} // end for
-		
+//		threeOfFourPositions.print("threeOfFourPositions");
 		return threeOfFourPositions;
 	} // end method threeOfFour
 
@@ -6545,7 +6764,7 @@ public class Connect4 {
 			} // end if
 			twoOfFourPositions.addAll(twoOfFour_AllColumns(node, move, vertical));
 		} // end for
-		
+//		twoOfFourPositions.print("twoOfFourPositions");
 		return twoOfFourPositions;
 	} // end method
 	
