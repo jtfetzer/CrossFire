@@ -13,5 +13,5 @@ public class MinMoveComparator implements Comparator<Move> { // sorts into desce
 			return move1.getValue() - move2.getValue();
 		}
 		return move1.getGreatestMoveValue() - move2.getGreatestMoveValue();
-	}
+	} // end method compare
 }

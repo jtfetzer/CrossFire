@@ -414,6 +414,7 @@ public class Connect4 {
 					block = false;
 				} else {
 					root.addAll(blocks);
+					System.out.println("Choose Add Blocks");
 					block = true;
 				}
 			} 
@@ -422,7 +423,7 @@ public class Connect4 {
 					if(maxWinMove != null){
 						return maxWinMove;
 					}
-					return best_block; // best depth-1 block move
+					return best_block;
 				}
 			}
 		} // end for i
