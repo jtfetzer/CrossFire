@@ -10,8 +10,8 @@ import java.util.Scanner;
 public class Connect4 {
 
 	private static Scanner in = new Scanner(System.in);
-	private static final int MAX_WIDTH = 3; // Max width of search
-	static final int MAX_DEPTH = 12; // Max depth of search
+	private static final int MAX_WIDTH = 4; // Max width of search
+	static final int MAX_DEPTH = 15; // Max depth of search
 	static final int MAX_WINS = 50000; // Computer wins with connect 4
 	static final int MIN_WINS = -50000; // Human wins with connect 4
 	
@@ -20,7 +20,7 @@ public class Connect4 {
 	
 	static final int OPEN_3_VALUE = 30000;
 	static final int OPEN_L_VALUE = 12000;
-	static final int THREE_OF_FOUR_VALUE = 25000;
+	static final int THREE_OF_FOUR_VALUE = 8000;
 	static final int TWO_OF_FOUR_VALUE = 4000;
 	static int BLOCK_MOST_SPACE_VALUE = 10000;
 	static final int ONE_OF_FOUR_VALUE = 500;
@@ -131,7 +131,7 @@ public class Connect4 {
 		String moveString;
 		
 		if(node.isStalemate()){
-			System.out.println("Stalemate!");
+			System.out.println("Draw!");
 			System.exit(0);
 		} // end if
 		while(true) {
@@ -337,6 +337,7 @@ public class Connect4 {
 	
 	public static Move chooseMove(BoardNode root) { // root.children are sorted into best order
 
+		root.printBoard();
 		MoveSet attacks = getMostPromisingMoves(root, false);
 		MoveSet blocks = getMostPromisingMoves(root, true);
 		boolean block;
@@ -345,12 +346,12 @@ public class Connect4 {
 			return blocks.max();
 		}
 
-		if(attacks.max().getGreatestMoveValue() >= blocks.max().getGreatestMoveValue()){
+		if(attacks.max().getBestMoveValue() >= blocks.max().getBestMoveValue()){
 			block = false;
 			root.addAll(attacks);
 		} else {
 			block = true;
-			if(blocks.max().getGreatestMoveValue() == getMultiplierValue(MAX_WINS, BLOCK_MULT)){
+			if(blocks.max().getBestMoveValue() == getMultiplierValue(MAX_WINS, BLOCK_MULT)){
 				return blocks.max();
 			}
 			root.addAll(blocks);
@@ -365,30 +366,31 @@ public class Connect4 {
 //			} // end else
 //		} // end if
 		
+//		Move best_attack = attacks.max();
 		Move best_block = blocks.max();
-		int minWinDepth = MAX_DEPTH + 1;
-		int maxWinDepth = MAX_DEPTH + 1;
+		int minWinDepth = 0;
+		int maxWinDepth = 0;
 		Move maxWinMove = null;
 		for (int i = 0; i < 2; i++) { // check attacks and blocks
 			
 			for (int j = 0; j < root.size(); j++) { // each node is evaluated up to Max_Depth
 				if(minWinDepth < maxWinDepth){
-					min(root.getChild(j), minWinDepth - 1);
+					min(root.getChild(j), minWinDepth + 1);
 				} else {
-					min(root.getChild(j), maxWinDepth - 1);
+					min(root.getChild(j), maxWinDepth + 1);
 				}
 				if(root.getChild(j).value == MAX_WINS){ // attack successful
-					if(root.getChild(j).maxWinDepth < maxWinDepth){
+					if(root.getChild(j).maxWinDepth < maxWinDepth || maxWinDepth == 0){
 						maxWinDepth = root.getChild(j).maxWinDepth;
 						maxWinMove = root.getChild(j).lastMove;
 					}
-					if(minWinDepth < MAX_DEPTH + 1){ // MIN's best move has been explored
-						if(maxWinDepth < minWinDepth){ // MAX can win in fewer moves than MIN can.
+					if(minWinDepth > 0){ // MIN's best move has been explored
+						if((maxWinMove != null) && maxWinDepth < minWinDepth){ // MAX can win in fewer moves than MIN can.
 							return maxWinMove;
 						}
 					}
 				} else if(root.getChild(j).value == MIN_WINS){ // attack unsuccessful
-					if(root.getChild(j).minWinDepth < minWinDepth){
+					if(root.getChild(j).minWinDepth < minWinDepth || minWinDepth == 0){
 						minWinDepth = root.getChild(j).minWinDepth;
 					} // end if
 				} else {
@@ -398,7 +400,7 @@ public class Connect4 {
 				}
 			} // end for j
 			
-			if(maxWinDepth < minWinDepth){ // attack successful
+			if(maxWinDepth != 0 && maxWinDepth < minWinDepth){ // attack successful
 				return maxWinMove;
 			} else if(root.minChildNodeValue() == MIN_WINS){
 				if(i > 0) {
@@ -414,7 +416,6 @@ public class Connect4 {
 					block = false;
 				} else {
 					root.addAll(blocks);
-					System.out.println("Choose Add Blocks");
 					block = true;
 				}
 			} 
@@ -434,23 +435,22 @@ public class Connect4 {
 		
 		if(node.lastMove.getValue() == MAX_WINS){
 			node.value = MAX_WINS;
-			node.maxWinDepth = (MAX_DEPTH + 1 - depth);
+			node.maxWinDepth = depth;
 			return;
 		}
-		
-		if(depth == 1){
+		if(depth == MAX_DEPTH || node.getNumEmptySpaces() == 0){
 			return;
 		}
 		boolean block;
 		MoveSet attacks = getMostPromisingMoves(node, ATTACK_MOVES);
 		MoveSet blocks = getMostPromisingMoves(node, BLOCK_MOVES);
 		
-		if(attacks.min().getGreatestMoveValue() < blocks.min().getGreatestMoveValue()){
+		if(attacks.min().getBestMoveValue() < blocks.min().getBestMoveValue()){ 
 			node.addAll(attacks);
 			block = false;
 		} else {
 			if(blocks.unstopableLoss()){
-				node.maxWinDepth = (MAX_DEPTH + 3 - depth);
+				node.maxWinDepth = depth + 2;
 				node.value = MAX_WINS;
 				return;
 			}
@@ -459,23 +459,23 @@ public class Connect4 {
 		}
 
 		for(int i = 0; i < node.size(); i++){ // most promising nodes
-			max(node.getChild(i), depth - 1);
-			if(node.getChild(i).depth == 1){
+			max(node.getChild(i), depth + 1);
+			if(node.getChild(i).depth == MAX_DEPTH){
 				return;
 			}
 			if(node.getChild(i).value == MAX_WINS){
-				if(node.maxWinDepth > node.getChild(i).maxWinDepth){
-					node.maxWinDepth = node.getChild(i).maxWinDepth;
+				if(node.maxWinDepth < node.getChild(i).maxWinDepth || node.maxWinDepth == 100){ // Find longest loss path
+					node.maxWinDepth = node.getChild(i).maxWinDepth; 
 				}
-				if(node.minWinDepth > node.maxWinDepth){
+				if(node.minWinDepth >= node.maxWinDepth){
 					node.value = MAX_WINS;
 				}
 			} else if(node.getChild(i).value == MIN_WINS){
-				node.value = MIN_WINS;
-				if(node.minWinDepth > node.getChild(i).minWinDepth){ // 
-//					if(!block){ // blocking can't stop MIN win
-						node.minWinDepth = node.getChild(i).minWinDepth;
-//					} // end if
+				if(node.minWinDepth <= node.maxWinDepth){
+					node.value = MIN_WINS;
+				}
+				if(node.minWinDepth >= node.getChild(i).minWinDepth){ // 
+					node.minWinDepth = node.getChild(i).minWinDepth;
 				} // end if
 				node.removeAllChildNodesExcept(node.getChild(i));
 				return;
@@ -497,25 +497,25 @@ public class Connect4 {
 		}
 
 		for(int i = 0; i < node.size(); i++){ // most promising nodes
-			max(node.getChild(i), depth - 1);
+			max(node.getChild(i), depth + 1);
 			if(node.getChild(i).value == MAX_WINS){
-				if(node.maxWinDepth > node.getChild(i).maxWinDepth){
+				if(node.maxWinDepth < node.getChild(i).maxWinDepth || node.maxWinDepth == 100){
 					node.maxWinDepth = node.getChild(i).maxWinDepth;
+					node.value = MAX_WINS;
 				}
-				node.value = MAX_WINS;
 				node.removeAllChildNodes();
 				return;
 			} else if(node.getChild(i).value == MIN_WINS){
-				node.value = MIN_WINS;
+				if(node.minWinDepth <= node.maxWinDepth){
+					node.value = MIN_WINS;
+				}
 				if(node.minWinDepth > node.getChild(i).minWinDepth){
-//					if(!block){ // blocking can't stop MIN win
-						node.minWinDepth = node.getChild(i).minWinDepth;
-//					}
+					node.minWinDepth = node.getChild(i).minWinDepth;
 				}
 				node.removeAllChildNodesExcept(node.getChild(i));
 				return;
 			} else { // neither player wins 
-				if(block){
+				if(block){ // block successful
 					node.removeAllChildNodes();
 					return;
 				}
@@ -529,22 +529,22 @@ public class Connect4 {
 
 		if(node.lastMove.getValue() == MIN_WINS){
 			node.value = MIN_WINS;
-			node.minWinDepth = (MAX_DEPTH + 1 - depth);
+			node.minWinDepth = depth;
 			return;
 		}
-		if(depth == 1){
+		if(depth == MAX_DEPTH || node.getNumEmptySpaces() == 0){
 			return;
 		}
 		boolean block;
 		MoveSet attacks = getMostPromisingMoves(node, ATTACK_MOVES);
 		MoveSet blocks = getMostPromisingMoves(node, BLOCK_MOVES);
 		
-		if(attacks.max().getGreatestMoveValue() > blocks.max().getGreatestMoveValue()){
+		if(attacks.max().getBestMoveValue() > blocks.max().getBestMoveValue()){
 			node.addAll(attacks);
 			block = false;
 		} else {
 			if(blocks.unstopableLoss()){
-				node.minWinDepth = (MAX_DEPTH + 3 - depth);
+				node.minWinDepth = depth + 2;
 				node.value = MIN_WINS;
 				return;
 			}
@@ -553,33 +553,32 @@ public class Connect4 {
 		}
 		
 		for(int i = 0; i < node.size(); i++){ // most promising nodes
-			min(node.getChild(i), depth - 1);
-			if(node.getChild(i).depth == 1){
+			min(node.getChild(i), depth + 1);
+			if(node.getChild(i).depth == MAX_DEPTH){
 				return;
 			}
 			if(node.getChild(i).value == MIN_WINS){
-				if(node.minWinDepth > node.getChild(i).minWinDepth){
+				if(node.minWinDepth < node.getChild(i).minWinDepth || node.minWinDepth == 100){ // Find longest loss path
 					node.minWinDepth = node.getChild(i).minWinDepth;
 				}
 				if(node.maxWinDepth > node.minWinDepth){
 					node.value = MIN_WINS;
 				}
 			} else if(node.getChild(i).value == MAX_WINS){
-					node.value = MAX_WINS;
-				if(node.maxWinDepth > node.getChild(i).maxWinDepth){
-//					if(!block){ // blocking can't stop MAX win
-						node.maxWinDepth = node.getChild(i).maxWinDepth;
-//					} // END IF
+				node.value = MAX_WINS;
+				if(node.maxWinDepth > node.getChild(i).maxWinDepth){ // Find shortest win path
+					node.maxWinDepth = node.getChild(i).maxWinDepth;
 				}
 				node.removeAllChildNodesExcept(node.getChild(i));
 				return;
 			} else { // neither player wins 
-				return;
+				if(block){ // block successful
+					node.removeAllChildNodes();
+					return;
+				}
 			} // end else
 		} // end for i
-
 		node.removeAllChildNodes();
-		
 		if(block){
 			node.addAll(attacks);
 			block = false;
@@ -589,28 +588,29 @@ public class Connect4 {
 		}
 		
 		for(int i = 0; i < node.size(); i++){ // most promising nodes
-			min(node.getChild(i), depth - 1);
-			if(node.getChild(i).value == MIN_WINS){
-				if(node.minWinDepth > node.getChild(i).minWinDepth){
+			min(node.getChild(i), depth + 1);
+			if(node.getChild(i).value == MIN_WINS){ // Find longest loss path
+				if(node.minWinDepth < node.getChild(i).minWinDepth || node.minWinDepth == 100){
 					node.minWinDepth = node.getChild(i).minWinDepth;
 				}
-				
-				node.value = MIN_WINS;
+				if(node.maxWinDepth > node.minWinDepth){
+					node.value = MIN_WINS;
+				}
 				node.removeAllChildNodes();
 				return;
 			} else if(node.getChild(i).value == MAX_WINS){
-				node.value = MAX_WINS;
+				if(node.maxWinDepth < node.minWinDepth){
+					node.value = MAX_WINS;
+				}
 				
 				if(node.maxWinDepth > node.getChild(i).maxWinDepth){
-//					if(!block){ // blocking can't stop MAX win
-						node.maxWinDepth = node.getChild(i).maxWinDepth;
-//					}
+					node.maxWinDepth = node.getChild(i).maxWinDepth; // shortest win path
 				}
 				
 				node.removeAllChildNodesExcept(node.getChild(i));
 				return;
 			} else { // neither player wins 
-				if(block){
+				if(block){ // block successful
 					node.removeAllChildNodes();
 					return;
 				}

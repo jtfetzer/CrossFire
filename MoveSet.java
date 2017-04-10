@@ -89,7 +89,7 @@ public class MoveSet extends ArrayList<Move> implements Comparator<Move>{
 			System.out.println(msg + ": ");
 		}
 		for (Move move: this) {
-			System.out.println("\t" + move.moveString + ", max: " + move.getGreatestMoveValue() + ", total: " + move.getValue() + " - " + move.moveTypeSet.toStringValue() + "; ");
+			System.out.println("\t" + move.moveString + ", max: " + move.getBestMoveValue() + ", total: " + move.getValue() + " - " + move.moveTypeSet.toStringValue() + "; ");
 		} // end for
 	}
 	
@@ -146,14 +146,14 @@ public class MoveSet extends ArrayList<Move> implements Comparator<Move>{
 		}
 		if(max){
 			for (int i = 0; i < this.size(); i++) {
-				if(this.get(i).getGreatestMoveValue() == Connect4.getMultiplierValue(Connect4.MAX_WINS, Connect4.BLOCK_MULT)){
+				if(this.get(i).getBestMoveValue() == Connect4.getMultiplierValue(Connect4.MAX_WINS, Connect4.BLOCK_MULT)){
 					++count;
 				} // end if
 			} // end for
 		} 
 		else { // Min
 			for (int i = 0; i < this.size(); i++) {
-				if(this.get(i).getGreatestMoveValue() == Connect4.getMultiplierValue(Connect4.MIN_WINS, Connect4.BLOCK_MULT)){
+				if(this.get(i).getBestMoveValue() == Connect4.getMultiplierValue(Connect4.MIN_WINS, Connect4.BLOCK_MULT)){
 					++count;
 				} // end if
 			} // end for

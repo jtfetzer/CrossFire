@@ -126,17 +126,10 @@ public class BoardNode implements Serializable{
 	/**
 	 * @return The number of empty spaces on the board.
 	 */
-	int getNumEmptySpaces() {
-		int numSpaces = 0;
-		for (int i = 0; i < board.length; i++) {
-			for (int j = 0; j < board.length; j++) {
-				if(board[i][j] == 0){
-					++numSpaces;
-				}
-			} // end for j
-		} // end for i
-		return numSpaces;
+	int getNumEmptySpaces(){
+		return 64 - moves.size();
 	}
+	
 	
 	/**
 	 * Prints the board state to the console.
@@ -188,9 +181,9 @@ public class BoardNode implements Serializable{
 	public void update(Move move) {
 		if(moves.add(move)){
 			lastMove = move;
-			int row = lastMove.row;
-			int col = lastMove.column;
-			board[row][col] = lastMove.player;
+			int row = move.row; 
+			int col = move.column;
+			board[row][col] = move.player;
 			map.put(move.moveString, move.moveString);
 		} else {
 			System.out.println("Update Error");

@@ -39,9 +39,9 @@ public class Move implements Serializable{
 	/**
 	 * A {@link MoveTypeSet} is a set of {@link MoveType}s. 
 	 * Each {@code MoveType} has a value reflecting the strength of that {@code MoveType}.
-	 * @return the value of {@code MoveType} with the greatest value in the {@code MoveTypeSet}.
+	 * @return the value of {@code MoveType} with the greatest (for Max) of least (for Min) value in the {@code MoveTypeSet}.
 	 */
-	public int getGreatestMoveValue(){
+	public int getBestMoveValue(){
 		return moveTypeSet.greatestMoveValue;
 	}
 } // end class Move
