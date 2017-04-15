@@ -34,34 +34,38 @@ public class MoveSet extends ArrayList<Move> implements Comparator<Move>{
 	 * Adds all unique unique {@link Move moves} in {@code moveList} to the {@link MoveList} object that call this method.
 	 * @param moveList
 	 */
-	public void addAll(MoveSet moveList){
+	public MoveSet addAll(MoveSet moveList){
 		for(Move next : moveList){
 			addUnique(next);
 		}
+		return this;
 	}
 
 	/**
 	 * Reduces the {@link MoveSet} to only contain the {@code numberOfBestMoves}, i.e. the moves with the highest values.
 	 * @param numberOfBestMoves
 	 */
-	public void reduceMax(int numberOfBestMoves) { 
+	public MoveSet reduceMax(int numberOfBestMoves) { 
 		if( numberOfBestMoves < 0 || numberOfBestMoves > this.size()){
-			return;
+			return this;
 		}
 		Collections.sort(this, new MaxMoveComparator()); // sort bestMoves with best first descending order
 		this.removeRange(numberOfBestMoves, this.size());
+		return this;
 	}
 	
 	/**
 	 * Reduces the {@link MoveSet} to only contain the {@code numberOfBestMoves}, i.e. the moves with the lowest values.
 	 * @param numberOfBestMoves
+	 * @return 
 	 */
-	public void reduceMin(int numberOfBestMoves) {
+	public MoveSet reduceMin(int numberOfBestMoves) {
 		if( numberOfBestMoves < 0 || numberOfBestMoves > this.size()){
-			return;
+			return this;
 		}
 		Collections.sort(this, new MinMoveComparator()); // sort bestMoves with best first descending order
 		this.removeRange(numberOfBestMoves, this.size());
+		return this;
 	}
 	
 	/**
@@ -136,6 +140,10 @@ public class MoveSet extends ArrayList<Move> implements Comparator<Move>{
 		return open3;
 	}
 
+	/**
+	 * @return True if {@link MoveSet} contains more than one CONNECT_4, meaning 
+	 * the CONNECT_4 cannot be blocked, else false.
+	 */
 	public boolean unstopableLoss() {
 		int count = 0;
 		boolean max = false;
@@ -160,6 +168,26 @@ public class MoveSet extends ArrayList<Move> implements Comparator<Move>{
 		} // END ELSE
 		
 		if(count > 1) return true;
+		return false;
+	}
+	/**
+	 * @return True if {@link MoveSet} contains a {@type MoveType} CONNECT_4, else false.
+	 */
+	public boolean canWin() {
+		for(Move move : this){
+			if(move.moveTypeSet.containsElement(MoveType.Type.CONNECT_4)){
+				return true;
+			}
+		}
+		return false;
+	}
+
+	public boolean canBlockWin() {
+		for(Move move : this){
+			if(move.moveTypeSet.containsElement(MoveType.Type.BLOCK_CONNECT_4)){
+				return true;
+			}
+		}
 		return false;
 	}
 

@@ -4,7 +4,6 @@ import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
-import java.util.Map;
 
 /**
  * 	This class is used in the context of a {@codeConnect4} game, 
@@ -26,8 +25,8 @@ public class BoardNode implements Serializable{
 	public int firstPlayer;	// May not be necessary, consider removing
 	public int depth = 0;
 	public int value = 0;
-	public int minWinDepth = 100;
-	public int maxWinDepth = 100;
+	public int minWinDepth = 0;
+	public int maxWinDepth = 0;
 
 	public String winner = "";
 	
@@ -63,7 +62,9 @@ public class BoardNode implements Serializable{
 		this.parent = parent; // never seem to use this, remove?
 		this.parent.children.add(this);
 		if(this.parent.moves.size() != 0){
-			this.map.putAll(parent.getMoves());
+			for(Move next : parent.moves){
+				this.map.put(next.moveString, next.moveString);
+			}
 		}
 		
 		for (int i = 0; i < board.length; i++) {
@@ -75,21 +76,10 @@ public class BoardNode implements Serializable{
 		if(this.board[move.row][move.column] == 0){
 			this.board[move.row][move.column] = move.player;
 			this.map.put(move.moveString, move.moveString);
-			this.moves.addAll(parent.moves.removeValues());
+			this.moves.addAll(parent.moves); // .removeValues()
 		} // end if
 	} // end constructor
 	
-	/**
-	 * 
-	 * @return A HashMap containing the move strings of all the moves played in this node.
-	 */
-	private Map<? extends String, ? extends String> getMoves() {
-		HashMap<String, String> moves = new HashMap<>();
-		for(Move move: this.moves){
-			moves.put(move.moveString, move.moveString);
-		}
-		return moves;
-	}
 	/**
 	 * Adds a child node with {@code move}.
 	 * @param move
@@ -97,10 +87,10 @@ public class BoardNode implements Serializable{
 	private void addNode(Move move) { 
 			
 		if(!this.map.containsKey(move.moveString)){
+			map.put(move.moveString, move.moveString);
 			BoardNode boardNode = new BoardNode(this, move);
 			boardNode.moves.add(new Move(move.row, move.column, move.player, move.moveTypeSet.get(0)));
 		}
-//		System.out.println("WRONG: " + move.moveString);
 	} // end method add
 
 	/**
@@ -185,22 +175,15 @@ public class BoardNode implements Serializable{
 			int col = move.column;
 			board[row][col] = move.player;
 			map.put(move.moveString, move.moveString);
+			if(move.player == 1){
+				printBoard();
+			}
 		} else {
 			System.out.println("Update Error");
 			System.exit(0);
 		}
 	}
 	
-	/**
-	 * Removes all children from the node that calls this method.
-	 */
-	public void removeAllChildNodes() {
-		for (int i = 0; i < this.size(); i++) {
-			this.children.remove(i--);
-		} // end for i
-		map.clear();
-	}
-
 	/**
 	 * Used to restore the state to before last move was played.
 	 */
@@ -292,7 +275,7 @@ public class BoardNode implements Serializable{
 	 * @return True or False if {@code moveString} has been played.
 	 */
 	public boolean hasMoveBeenPlayed(String moveString) {
-		return map.containsKey(moveString);
+		return map.containsValue(moveString);
 	}
 	
 	/**
@@ -371,7 +354,7 @@ public class BoardNode implements Serializable{
 	public int minChildNodeValue(){
 		sortNodes();
 		if(this.children.size() == 0) {
-			System.out.println("MIN ERROR");
+			System.out.println("MIN ERROR in BoardNode");
 			return this.value;
 		} 
 		return this.children.get(this.children.size() - 1).value;
@@ -383,26 +366,19 @@ public class BoardNode implements Serializable{
 	public int maxChildNodeValue(){
 		sortNodes();
 		if(this.children.size() == 0) {
-			System.out.println("MAX ERROR");
+			System.out.println("MAX ERROR in BoardNode");
 			return this.value;
 		} 
 		return this.children.get(0).value;
 	}
 
 	/**
-	 * Removes all child nodes, except for the node passed as the parameter to this method.
-	 * @param min
+	 * Removes all children from the node that calls this method.
 	 */
-	public void removeAllChildNodesExcept(int node) {
-		
-		String move = this.children.get(node).lastMove.moveString;
-		
+	public void removeAllChildNodes() {
 		for (int i = 0; i < this.size(); i++) {
-			if(i != node){
-				this.children.remove(i--);
-			} 
-		map.clear();
-		map.put(move, move);
+			map.remove(children.get(i).lastMove.moveString);
+			children.remove(i--);
 		} // end for i
 	}
 	
@@ -410,17 +386,27 @@ public class BoardNode implements Serializable{
 	 * Removes all child nodes, except for the node passed as the parameter to this method.
 	 * @param min
 	 */
+	public void removeAllChildNodesExcept(int node) {
+		
+		for (int i = 0; i < this.size(); i++) {
+			if(i != node){
+				map.remove(children.get(i).lastMove.moveString);
+				this.children.remove(i--);
+			} 
+		} // end for i
+	}
+
+	/**
+	 * Removes all child nodes, except for the node passed as the parameter to this method.
+	 * @param min
+	 */
 	public void removeAllChildNodesExcept(BoardNode node) {
-		String move = null;
 		for (int i = 0; i < this.size(); i++) {
 			if(!this.children.get(i).equals(node)){
+				map.remove(children.get(i).lastMove.moveString);
 				this.children.remove(i--);
-			} else {
-				move = this.children.get(i).lastMove.moveString;
-			}
+			} // end if
 		} // end for i
-		map.clear();
-		map.put(move, move);
 	}
 
 	/**
@@ -428,16 +414,12 @@ public class BoardNode implements Serializable{
 	 * @param min
 	 */
 	public void removeAllChildNodesExcept(Move min) {
-		String move = null;
 		for (int i = 0; i < this.size(); i++) {
 			if(!this.children.get(i).lastMove.equals(min)){
+				map.remove(children.get(i).lastMove.moveString);
 				this.children.remove(i--);
-			} else {
-				move = this.children.get(i).lastMove.moveString;
-			}
+			} // end if
 		} // end for i
-		map.clear();
-		map.put(move, move);
 	}
 	
 	/**
@@ -445,16 +427,12 @@ public class BoardNode implements Serializable{
 	 * @param moveString
 	 */
 	public void removeAllChildNodesExcept(String moveString) {
-		String move = null;
 		for (int i = 0; i < this.size(); i++) {
 			if(!this.children.get(i).lastMove.moveString.equals(moveString)){
+				map.remove(children.get(i).lastMove.moveString);
 				this.children.remove(i--);
-			} else {
-				move = this.children.get(i).lastMove.moveString;
-			}
+			} // end if
 		} // end for i
-		map.clear();
-		map.put(move, move);
 	}
 	
 	/**
@@ -462,16 +440,12 @@ public class BoardNode implements Serializable{
 	 * @param node
 	 */
 	public void removeChildNode(int node) {
-		String move = null;
 		for (int i = 0; i < this.size(); i++) {
-			if(i != node){
+			if(i == node){
+				map.remove(children.get(i).lastMove.moveString);
 				this.children.remove(i--);
-			} else {
-				move = this.children.get(i).lastMove.moveString;
-			}
+			} // end if
 		} // end for i
-		map.clear();
-		map.put(move, move);
 	}
 	
 	/**

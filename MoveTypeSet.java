@@ -1,5 +1,6 @@
 package boardGame;
 import java.util.ArrayList;
+import java.util.Iterator;
 
 /**
  * 
@@ -60,12 +61,36 @@ public class MoveTypeSet extends ArrayList<MoveType>{
 					greatestMoveValue = moveType.value;
 				}
 			}
+		
 			value += moveType.value;
 			super.add(moveType);
+//			if(this.size() > 1){
+//				if(this.containsElement(MoveType.Type.THREE_4_HORIZ ) && 
+//				   this.containsElement(MoveType.Type.PRE_OPEN_3_VERT)){ 
+//					
+//					System.out.println("Forced WIN");
+//					addUnique( new MoveType(MoveType.Type.FORCE_WIN, (int) (Connect4.MAX_WINS * .9)));
+//				}
+//				if(this.containsElement(MoveType.Type.THREE_4_VERT ) && 
+//				   this.containsElement(MoveType.Type.PRE_OPEN_3_HORIZ)){ 
+//					
+//					System.out.println("Forced WIN");
+//					addUnique( new MoveType(MoveType.Type.FORCE_WIN, (int) (Connect4.MAX_WINS * .9)));
+//				}
+//			}
 		}
 		return newType;
 	} // end method add
 	
+	public boolean containsElement(MoveType.Type moveType){
+		Iterator<MoveType> it = this.iterator();
+		while(it.hasNext()){
+			if(it.next().type == moveType){
+				return true;
+			}
+		}
+		return false;
+	}
 	@Override
 	public String toString(){
 		
@@ -78,7 +103,7 @@ public class MoveTypeSet extends ArrayList<MoveType>{
 
 	public String toStringValue(){
 		
-		String list = "{ Max: " + this.greatestMoveValue + " ";
+		String list = "";
 		if(this.size() > 1){
 			for(MoveType next : this){
 				list += next.type + ": " + next.value + ", ";;

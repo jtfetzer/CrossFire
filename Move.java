@@ -33,6 +33,7 @@ public class Move implements Serializable{
 	} // end method updateValue
 
 	public int getValue(){
+		
 		return moveTypeSet.value;
 	}
 	

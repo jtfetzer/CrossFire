@@ -3,7 +3,7 @@ package boardGame;
 public class MoveType {
 	
 	public enum Type {
-		CONNECT_4, BLOCK_CONNECT_4,
+		CONNECT_4, BLOCK_CONNECT_4, FORCE_WIN,
 		
 		SMALL_OPEN_L, BLOCK_SMALL_OPEN_L, BIG_OPEN_L, BLOCK_BIG_OPEN_L,
 		
