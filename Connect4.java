@@ -10,7 +10,7 @@ import java.util.Scanner;
 public class Connect4 {
 
 	private static Scanner in = new Scanner(System.in);
-	private static final int MAX_WIDTH = 8; // size of search is (MAX_WIDTH / 2)
+	private static final int MAX_WIDTH = 6; // size of search is (MAX_WIDTH / 2)
 	static final int MAX_WINS = 50000; // Computer wins with connect 4
 	static final int MIN_WINS = -50000; // Human wins with connect 4
 	
@@ -23,7 +23,6 @@ public class Connect4 {
 	static boolean SHOW_BOARDS = false; // shows AI's search
 	static boolean SHOW_MOVES = false; // shows the AI's best moves to explore
 	static boolean SHOW_MOVES_MINIMAX = false; // shows the AI's best moves in minimax to explore
-	
 	
 	static long TIME_LIMIT = 20; // max search time in seconds
 	static long startTime;
@@ -161,7 +160,7 @@ public class Connect4 {
 				if(node.hasMoveBeenPlayed(moveString)) {
 					System.out.println("  ~ " + getRow(row) + (column + 1)+ " is already taken.");
 				} 
-				else {
+				else { // modify to cache search results
 //					if(node.containsChildNode(moveString)){
 //						System.out.println("Move String: " + moveString);
 //						node.removeAllChildNodesExcept(moveString);
@@ -385,14 +384,10 @@ public class Connect4 {
 		MoveSet losingMoves = new MoveSet();
 		startTime = System.currentTimeMillis();
 		TIME = false;
-			
+		// use a threadpool here
 		for (int j = 0; j < root.size(); j++) { // each node is evaluated up to Max_Depth
 //			System.out.println("Enter " + j + " " + root.getChild(j).lastMove.moveString);
-			if(minWinDepth < maxWinDepth){
-				min(root.getChild(j), minWinDepth + 1);
-			} else {
-				min(root.getChild(j), maxWinDepth + 1);
-			}
+			min(root.getChild(j), maxWinDepth + 1);
 //			System.out.println("\nExplored: ");
 //			for (int i = 0; i <= j; i++) {
 //				System.out.print(root.getChild(i).lastMove.moveString + ": " + root.getChild(i).value + " ");
