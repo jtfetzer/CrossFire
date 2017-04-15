@@ -10,25 +10,34 @@ import java.util.Scanner;
 public class Connect4 {
 
 	private static Scanner in = new Scanner(System.in);
-	private static final int MAX_WIDTH = 4; // Max width of search
-	static final int MAX_DEPTH = 15; // Max depth of search
+	private static final int MAX_WIDTH = 8; // size of search is (MAX_WIDTH / 2)
 	static final int MAX_WINS = 50000; // Computer wins with connect 4
 	static final int MIN_WINS = -50000; // Human wins with connect 4
 	
-	static boolean ATTACK_MOVES = false;
-	static boolean BLOCK_MOVES = true;
+	static final int MAX_DEPTH = 10; // Max depth of search
+	
+	static final boolean ATTACK_MOVES = false;
+	static final boolean BLOCK_MOVES = true;
+	
+	static boolean TIME = false; // Is TIME_LIMIT up?	
+	static boolean SHOW_BOARDS = false; // shows AI's search
+	static boolean SHOW_MOVES = false; // shows the AI's best moves to explore
+	static boolean SHOW_MOVES_MINIMAX = false; // shows the AI's best moves in minimax to explore
+	
+	
+	static long TIME_LIMIT = 20; // max search time in seconds
+	static long startTime;
 	
 	static final int OPEN_3_VALUE = 30000;
-	static final int OPEN_L_VALUE = 12000;
-	static final int THREE_OF_FOUR_VALUE = 8000;
+	static final int OPEN_L_VALUE = 25000;
+	static final int THREE_OF_FOUR_VALUE = 20000;
 	static final int TWO_OF_FOUR_VALUE = 4000;
-	static int BLOCK_MOST_SPACE_VALUE = 10000;
+	static final int BLOCK_MOST_SPACE_VALUE = 10000;
 	static final int ONE_OF_FOUR_VALUE = 500;
 	static final double PRE_MULT = .6;
 	static final double BLOCK_MULT = .2; 		// reduce value of block moves by this multiplier,
 											 	// e.g. a value of .1 will reduce block move values by 
 	public static void main(String[] args) { 	// 10% of their attack move value counterparts.
-		
 		playGame();
 		in.close();
 	} // end method main
@@ -37,9 +46,9 @@ public class Connect4 {
 		BoardNode root = null;
 		int firstPlayer;
 		
-//		System.out.print("Would you like to go first? (y/n): ");
-//		String playFirst = in.nextLine().toLowerCase();
-		String playFirst = "y";
+		System.out.print("Would you like to go first? (y/n): ");
+		String playFirst = in.nextLine().toLowerCase();
+
 		if(playFirst.equals("y")){
 			firstPlayer = 1; // human
 		} else {
@@ -55,15 +64,14 @@ public class Connect4 {
 			root = new BoardNode(firstPlayer); 
 			root.update(validate(firstPlayer, root)); 
 		} 
-
+		
 		while(true){
 			root.update(chooseMove(root)); // computer
 			testGameOver(root);
-			root.removeAllChildNodes();
+			root.removeAllChildNodes(); // Modify to save predicted opponent moves
 			root.update(validate(root)); // human
 			testGameOver(root);
 			root.removeAllChildNodes();
-			
 		} // end while
 	} // end method playGame
 
@@ -112,12 +120,12 @@ public class Connect4 {
 			
 			row = getRow(String.valueOf(moveString.charAt(0)).toLowerCase());
 			column = Integer.valueOf(String.valueOf(moveString.charAt(1))) - 1;
+			
 			if(row > 7 || column > 7){
 				System.out.println("  Invalid entry, try again.");
 			} else {
 				if(node.hasMoveBeenPlayed(moveString)) {
 					System.out.println("  ~ " + getRow(row) + (column + 1)+ " is already taken.");
-					//System.out.println(node.map.values());
 				} else {
 					return new Move(row, column, player, null); 
 				}
@@ -267,14 +275,11 @@ public class Connect4 {
 			bestMoves.sort(new MinMoveComparator());
 		}
 		
-		    // MODIFY TO USE A STOCHASTIC BEAM SEARCH
-			// These moves are thought to be the most promising. The number of moves 
-			// examined is reduced to reduce the size of the search space.
-			// These moves do not yet have evaluated values, as their values 
-			// are determined via the minimax algorithm.
-			// each move added is a child node and part of the beam search
+		// These moves are likely the most promising.
+		// These moves values are determined via the minimax algorithm.
+		// Each move is added as a child node and part of the beam search
 		if(player == 2){ // computer
-			bestMoves.reduceMax(MAX_WIDTH); // perform a stochastic beam search implementing minimax with alpha-beta pruning
+			bestMoves.reduceMax(MAX_WIDTH); 
 		} else {
 			bestMoves.reduceMin(MAX_WIDTH);
 		}
@@ -282,7 +287,7 @@ public class Connect4 {
 	} // end getBestMove
 	
 	public static MoveSet possibilities(BoardNode node, boolean block) {
-		// Use a threadpool here
+
 		MoveSet best = new MoveSet();
 		MoveSet connect4Positions = getConnect4PositionsList(node, block); // saves all possible 4-in-a-row moves to global list connect4Positions
 		if(connect4Positions.size() > 0) {
@@ -297,9 +302,6 @@ public class Connect4 {
 		MoveSet twoOfFourPositions = getTwoOfFourPositionsList(node, block);
 		
 		if(open3Positions.size() > 0){
-//			if(open3Positions.getNumOpen3() > 0){ // open3Positions contains both open3Positions and preOpen3Positions
-//				return open3Positions.getOpen3();			  // check whether this MoveSet contains any open3Positions
-//			}
 			best.addAll(open3Positions);
 		} 
 		if(smallOpenLPositions.size() > 0){
@@ -337,25 +339,36 @@ public class Connect4 {
 	
 	public static Move chooseMove(BoardNode root) { // root.children are sorted into best order
 
-		root.printBoard();
+		if(SHOW_BOARDS){
+			root.printBoard();
+			if(!SHOW_MOVES){
+				try {
+					Thread.sleep(1000);
+				} catch (InterruptedException e) {
+					e.printStackTrace();
+				}
+			}
+		}
 		MoveSet attacks = getMostPromisingMoves(root, false);
 		MoveSet blocks = getMostPromisingMoves(root, true);
-		boolean block;
-		
-		if(root.moves.size() < 2){ // save time of first move
-			return blocks.max();
-		}
 
-		if(attacks.max().getBestMoveValue() >= blocks.max().getBestMoveValue()){
-			block = false;
-			root.addAll(attacks);
-		} else {
-			block = true;
-			if(blocks.max().getBestMoveValue() == getMultiplierValue(MAX_WINS, BLOCK_MULT)){
+		if(!attacks.canWin()){
+			if(blocks.canBlockWin()){
 				return blocks.max();
 			}
-			root.addAll(blocks);
 		}
+		Move best_block = blocks.max();
+		
+		if(root.moves.size() >= 2){
+			attacks.addAll(blocks).reduceMax(MAX_WIDTH);
+//			attacks.print("Best");
+		} else {
+			return blocks.max();
+		}
+//		System.out.println("Press enter to continue:");
+//		in.nextLine();
+
+		root.addAll(attacks);
 //		if(root.getNumEmptySpaces() == 0){ // Change to check to see if game will end in stalemate.
 //			if(possibleConnect4(root.board, root.lastMove)){
 //				printWinner(root.lastMove.player);
@@ -365,259 +378,193 @@ public class Connect4 {
 //				System.exit(0);
 //			} // end else
 //		} // end if
-		
-//		Move best_attack = attacks.max();
-		Move best_block = blocks.max();
+//		
 		int minWinDepth = 0;
 		int maxWinDepth = 0;
 		Move maxWinMove = null;
-		for (int i = 0; i < 2; i++) { // check attacks and blocks
+		MoveSet losingMoves = new MoveSet();
+		startTime = System.currentTimeMillis();
+		TIME = false;
 			
-			for (int j = 0; j < root.size(); j++) { // each node is evaluated up to Max_Depth
-				if(minWinDepth < maxWinDepth){
-					min(root.getChild(j), minWinDepth + 1);
-				} else {
-					min(root.getChild(j), maxWinDepth + 1);
-				}
-				if(root.getChild(j).value == MAX_WINS){ // attack successful
-					if(root.getChild(j).maxWinDepth < maxWinDepth || maxWinDepth == 0){
-						maxWinDepth = root.getChild(j).maxWinDepth;
-						maxWinMove = root.getChild(j).lastMove;
-					}
-					if(minWinDepth > 0){ // MIN's best move has been explored
-						if((maxWinMove != null) && maxWinDepth < minWinDepth){ // MAX can win in fewer moves than MIN can.
-							return maxWinMove;
-						}
-					}
-				} else if(root.getChild(j).value == MIN_WINS){ // attack unsuccessful
-					if(root.getChild(j).minWinDepth < minWinDepth || minWinDepth == 0){
-						minWinDepth = root.getChild(j).minWinDepth;
-					} // end if
-				} else {
-					if(maxWinMove == null){
-						maxWinMove = root.getChild(j).lastMove;
-					}
-				}
-			} // end for j
-			
-			if(maxWinDepth != 0 && maxWinDepth < minWinDepth){ // attack successful
-				return maxWinMove;
-			} else if(root.minChildNodeValue() == MIN_WINS){
-				if(i > 0) {
-					if(maxWinMove != null){
-						return maxWinMove;
-					}
-					return best_block;
-				}
-				root.removeAllChildNodes();
-				
-				if(block){
-					root.addAll(attacks);
-					block = false;
-				} else {
-					root.addAll(blocks);
-					block = true;
-				}
-			} 
-			else {
-				if(i > 0){
-					if(maxWinMove != null){
-						return maxWinMove;
-					}
-					return best_block;
-				}
+		for (int j = 0; j < root.size(); j++) { // each node is evaluated up to Max_Depth
+//			System.out.println("Enter " + j + " " + root.getChild(j).lastMove.moveString);
+			if(minWinDepth < maxWinDepth){
+				min(root.getChild(j), minWinDepth + 1);
+			} else {
+				min(root.getChild(j), maxWinDepth + 1);
 			}
-		} // end for i
+//			System.out.println("\nExplored: ");
+//			for (int i = 0; i <= j; i++) {
+//				System.out.print(root.getChild(i).lastMove.moveString + ": " + root.getChild(i).value + " ");
+//			} // end for i
+//			System.out.println("\n\nTo be Explored: ");
+//			for (int i = j + 1; i < root.size(); i++) {
+//				System.out.print(root.getChild(i).lastMove.moveString + ": " + root.getChild(i).value + " ");
+//			} // end for i
+//			System.out.println("\n");
+			
+			if(root.getChild(j).value == MAX_WINS){ // attack successful
+				if(root.getChild(j).maxWinDepth < maxWinDepth || maxWinDepth == 0){ // find win with least number of moves
+					maxWinDepth = root.getChild(j).maxWinDepth;
+					maxWinMove = root.getChild(j).lastMove;
+				}
+			} else if(root.getChild(j).value == MIN_WINS){ // attack unsuccessful
+				losingMoves.add(root.getChild(j).lastMove);
+				if(root.getChild(j).minWinDepth < minWinDepth || minWinDepth == 0){
+					minWinDepth = root.getChild(j).minWinDepth; // don't pick
+				} // end if
+			} else {
+				best_block = root.getChild(j).lastMove;
+			}
+			if(TIME){
+				break;
+			}
+			
+		} // end for j
+		
+//		if(losingMoves.size() > 0){
+//			losingMoves.print("losing moves");
+//		}
+		if(root.maxChildNodeValue() == MAX_WINS){ // attack successful
+			
+			return maxWinMove;
+		}
+		root.removeAllChildNodes(); // REMOVE later
 		return best_block;
 	} // end method evaluate
 	
 	public static void min(BoardNode node, int depth){
+
+		if(SHOW_BOARDS){
+			System.out.println("-------MIN------- Depth: " + depth);
+			node.printBoard();
+			if(!SHOW_MOVES_MINIMAX){
+				try {
+					Thread.sleep(1000);
+				} catch (InterruptedException e) {
+					e.printStackTrace();
+				}
+			}
+		}
 		
-		if(node.lastMove.getValue() == MAX_WINS){
+		if(node.lastMove.getBestMoveValue() == MAX_WINS){
 			node.value = MAX_WINS;
 			node.maxWinDepth = depth;
 			return;
 		}
+		if(!SHOW_MOVES_MINIMAX && (System.currentTimeMillis() - startTime) / 1000 > TIME_LIMIT){
+			TIME = true;	// No time limit if showing minimax moves
+			return;
+		} 
 		if(depth == MAX_DEPTH || node.getNumEmptySpaces() == 0){
 			return;
 		}
-		boolean block;
+		
 		MoveSet attacks = getMostPromisingMoves(node, ATTACK_MOVES);
 		MoveSet blocks = getMostPromisingMoves(node, BLOCK_MOVES);
-		
-		if(attacks.min().getBestMoveValue() < blocks.min().getBestMoveValue()){ 
-			node.addAll(attacks);
-			block = false;
-		} else {
-			if(blocks.unstopableLoss()){
-				node.maxWinDepth = depth + 2;
-				node.value = MAX_WINS;
-				return;
-			}
-			node.addAll(blocks);
-			block = true;
-		}
+		MoveSet bestMoves = blocks.addAll(attacks).reduceMin(MAX_WIDTH/2);
 
-		for(int i = 0; i < node.size(); i++){ // most promising nodes
-			max(node.getChild(i), depth + 1);
-			if(node.getChild(i).depth == MAX_DEPTH){
+		if(SHOW_MOVES_MINIMAX){
+			bestMoves.print("BestMoves");
+			System.out.println("Press enter to continue:");
+			in.nextLine();
+		}
+		
+//		if(blocks.min().getValue() > attacks.min().getValue()){ 
+//			if(blocks.unstopableLoss()){
+//				node.maxWinDepth = depth + 2;
+//				node.value = MAX_WINS;
+//				return;
+//			}
+//		} 
+		node.addAll(bestMoves);
+		
+		for(int j = 0; j < node.size(); j++){ // most promising nodes
+			max(node.getChild(j), depth + 1);
+			if(node.getChild(j).value == MAX_WINS){
+				if(node.maxWinDepth < node.getChild(j).maxWinDepth){ // Find longest loss path
+					node.maxWinDepth = node.getChild(j).maxWinDepth; 
+				}
+			} else if(node.getChild(j).value == MIN_WINS){
+				node.minWinDepth = node.getChild(j).minWinDepth;
+				node.value = MIN_WINS;
+				node.removeAllChildNodesExcept(node.getChild(j));
 				return;
-			}
-			if(node.getChild(i).value == MAX_WINS){
-				if(node.maxWinDepth < node.getChild(i).maxWinDepth || node.maxWinDepth == 100){ // Find longest loss path
-					node.maxWinDepth = node.getChild(i).maxWinDepth; 
-				}
-				if(node.minWinDepth >= node.maxWinDepth){
-					node.value = MAX_WINS;
-				}
-			} else if(node.getChild(i).value == MIN_WINS){
-				if(node.minWinDepth <= node.maxWinDepth){
-					node.value = MIN_WINS;
-				}
-				if(node.minWinDepth >= node.getChild(i).minWinDepth){ // 
-					node.minWinDepth = node.getChild(i).minWinDepth;
-				} // end if
-				node.removeAllChildNodesExcept(node.getChild(i));
-				return;
-			} else { // neither player wins 
-				if(block){
-					node.removeAllChildNodes();
-					return;
-				}
+			} 
+			if(TIME){ // add return if block successful?
+				break;
 			}
 		} // end for i
-		
+		node.value = node.minChildNode().value;
 		node.removeAllChildNodes();
-		if(block){
-			node.addAll(attacks);
-			block = false;
-		} else {
-			node.addAll(blocks);
-			block = true;
-		}
-
-		for(int i = 0; i < node.size(); i++){ // most promising nodes
-			max(node.getChild(i), depth + 1);
-			if(node.getChild(i).value == MAX_WINS){
-				if(node.maxWinDepth < node.getChild(i).maxWinDepth || node.maxWinDepth == 100){
-					node.maxWinDepth = node.getChild(i).maxWinDepth;
-					node.value = MAX_WINS;
-				}
-				node.removeAllChildNodes();
-				return;
-			} else if(node.getChild(i).value == MIN_WINS){
-				if(node.minWinDepth <= node.maxWinDepth){
-					node.value = MIN_WINS;
-				}
-				if(node.minWinDepth > node.getChild(i).minWinDepth){
-					node.minWinDepth = node.getChild(i).minWinDepth;
-				}
-				node.removeAllChildNodesExcept(node.getChild(i));
-				return;
-			} else { // neither player wins 
-				if(block){ // block successful
-					node.removeAllChildNodes();
-					return;
-				}
-			} // end else
-		} // end for i
-			
-		node.removeAllChildNodes();
+		return;
 	} // end method min
 	
 	public static void max(BoardNode node, int depth){
 
-		if(node.lastMove.getValue() == MIN_WINS){
+		if(SHOW_BOARDS){
+			System.out.println("-------MAX------- Depth: " + depth);
+			node.printBoard();
+			if(!SHOW_MOVES_MINIMAX){
+				try {
+					Thread.sleep(1000);
+				} catch (InterruptedException e) {
+					e.printStackTrace();
+				}
+			}
+		}
+		
+		if(node.lastMove.getBestMoveValue() == MIN_WINS){
 			node.value = MIN_WINS;
 			node.minWinDepth = depth;
+			return;
+		}
+		if(TIME){
 			return;
 		}
 		if(depth == MAX_DEPTH || node.getNumEmptySpaces() == 0){
 			return;
 		}
-		boolean block;
 		MoveSet attacks = getMostPromisingMoves(node, ATTACK_MOVES);
 		MoveSet blocks = getMostPromisingMoves(node, BLOCK_MOVES);
-		
-		if(attacks.max().getBestMoveValue() > blocks.max().getBestMoveValue()){
-			node.addAll(attacks);
-			block = false;
-		} else {
-			if(blocks.unstopableLoss()){
-				node.minWinDepth = depth + 2;
-				node.value = MIN_WINS;
-				return;
-			}
-			node.addAll(blocks);
-			block = true;
-		}
-		
-		for(int i = 0; i < node.size(); i++){ // most promising nodes
-			min(node.getChild(i), depth + 1);
-			if(node.getChild(i).depth == MAX_DEPTH){
-				return;
-			}
-			if(node.getChild(i).value == MIN_WINS){
-				if(node.minWinDepth < node.getChild(i).minWinDepth || node.minWinDepth == 100){ // Find longest loss path
-					node.minWinDepth = node.getChild(i).minWinDepth;
-				}
-				if(node.maxWinDepth > node.minWinDepth){
-					node.value = MIN_WINS;
-				}
-			} else if(node.getChild(i).value == MAX_WINS){
-				node.value = MAX_WINS;
-				if(node.maxWinDepth > node.getChild(i).maxWinDepth){ // Find shortest win path
-					node.maxWinDepth = node.getChild(i).maxWinDepth;
-				}
-				node.removeAllChildNodesExcept(node.getChild(i));
-				return;
-			} else { // neither player wins 
-				if(block){ // block successful
-					node.removeAllChildNodes();
-					return;
-				}
-			} // end else
-		} // end for i
-		node.removeAllChildNodes();
-		if(block){
-			node.addAll(attacks);
-			block = false;
-		} else {
-			node.addAll(blocks);
-			block = true;
-		}
-		
-		for(int i = 0; i < node.size(); i++){ // most promising nodes
-			min(node.getChild(i), depth + 1);
-			if(node.getChild(i).value == MIN_WINS){ // Find longest loss path
-				if(node.minWinDepth < node.getChild(i).minWinDepth || node.minWinDepth == 100){
-					node.minWinDepth = node.getChild(i).minWinDepth;
-				}
-				if(node.maxWinDepth > node.minWinDepth){
-					node.value = MIN_WINS;
-				}
-				node.removeAllChildNodes();
-				return;
-			} else if(node.getChild(i).value == MAX_WINS){
-				if(node.maxWinDepth < node.minWinDepth){
-					node.value = MAX_WINS;
-				}
-				
-				if(node.maxWinDepth > node.getChild(i).maxWinDepth){
-					node.maxWinDepth = node.getChild(i).maxWinDepth; // shortest win path
-				}
-				
-				node.removeAllChildNodesExcept(node.getChild(i));
-				return;
-			} else { // neither player wins 
-				if(block){ // block successful
-					node.removeAllChildNodes();
-					return;
-				}
-			} // end else
-		} // end for i
+		MoveSet bestMoves = attacks.addAll(blocks).reduceMax(MAX_WIDTH/2);;
+
+		if(SHOW_MOVES_MINIMAX){
 			
+			bestMoves.print("BestMoves");
+			System.out.println("Press enter to continue:");
+			in.nextLine();
+		}
+//		if(blocks.max().getValue() > attacks.max().getValue()){ 
+//			if(blocks.unstopableLoss()){
+//				node.minWinDepth = depth + 2;
+//				node.value = MIN_WINS;
+//				return;
+//			}
+//		} 
+		node.addAll(bestMoves);
+		
+		for(int i = 0; i < node.size(); i++){ // most promising nodes
+			min(node.getChild(i), depth + 1);
+
+			if(node.getChild(i).value == MIN_WINS){
+				if(node.minWinDepth < node.getChild(i).minWinDepth){ // Find longest loss path
+					node.minWinDepth = node.getChild(i).minWinDepth;
+				} 
+			} else if(node.getChild(i).value == MAX_WINS){
+				node.maxWinDepth = node.getChild(i).maxWinDepth;
+				node.value = MAX_WINS;
+				node.removeAllChildNodesExcept(node.getChild(i));
+				return;
+			} 
+			if(TIME){ // add check if block successful
+				break;
+			}
+		} // end for i
+		
+		node.value = node.maxChildNode().value;
 		node.removeAllChildNodes();
+		return;
 	} // end method max
 
 	private static Move getRandomStartMove() {
@@ -1860,7 +1807,20 @@ public class Connect4 {
 								
 								open3Positions.addUnique( new Move(row - 2, col, player, typeOpen3Vert)); // up 2
 							} // end else if
-						} // end if
+						} 
+	// add this correction throughout method as per symmetry.
+						if(board[row + 2][col] == 0){ // down 2
+							if(board[row - 2][col] == 0){ // up 2
+								if(board[row - 1][col] == 0){ // up 1
+									open3Positions.addUnique( new Move(row - 1, col, player, typePreOpen3Vert)); // up 1
+									open3Positions.addUnique( new Move(row + 1, col, player, typePreOpen3Vert)); // down 1
+								} else if(board[row - 1][col] == i){ // up 1
+									
+									open3Positions.addUnique( new Move(row + 1, col, player, typeOpen3Vert)); // down 1
+								}
+							}
+						}
+	///////
 					} else if(board[row + 1][col] == i && // down 1
 							  board[row + 2][col] == 0 ){ // down 2
 						if(board[row - 1][col] == 0 && // up 1
@@ -5403,10 +5363,10 @@ public class Connect4 {
 				
 				if(board[row][col + 2] == 0){ // right 2
 					
-					if(((board[row][col - 1]     == 0 || // left 1
-					    board[row][col - 1]     == i)|| // left 1
+					if((board[row][col - 1]     == 0 || // left 1
+					    board[row][col - 1]     == i)&& // left 1
 					   (board[row][col + 3]     == 0 || // right 3
-					    board[row][col + 3]     == i))&& // right 3
+					    board[row][col + 3]     == i)&& // right 3
 					   (board[row][col + 1]     == 0 || // right 1
 					    board[row][col + 1]     == i)&& // right 1
 					   (board[row - 1][col + 2] == 0 || // up 1 right 2
@@ -5429,10 +5389,10 @@ public class Connect4 {
 				} // end if
 				if(board[row + 2][col] == 0){ // down 2
 					
-					if(((board[row - 1][col]     == 0 || // up 1
-						board[row - 1][col]     == i)|| // up 1
+					if((board[row - 1][col]     == 0 || // up 1
+						board[row - 1][col]     == i)&& // up 1
 					   (board[row + 3][col]     == 0 || // down 3
-						board[row + 3][col]     == i))&& // down 3
+						board[row + 3][col]     == i)&& // down 3
 					   (board[row + 1][col]     == 0 || // down 1
 						board[row + 1][col]     == i)&& // down 1
 					   (board[row + 2][col - 1] == 0 || // down 2 left 1 
@@ -5460,10 +5420,10 @@ public class Connect4 {
 			
 			if(board[row][col + 2] == 0){ // right 2
 				
-				if(((board[row][col - 1]     == 0 || // left 1
-					board[row][col - 1]     == i)|| // left 1
+				if((board[row][col - 1]     == 0 || // left 1
+					board[row][col - 1]     == i)&& // left 1
 				   (board[row][col + 3]     == 0 || // right 3
-					board[row][col + 3]     == i))&& // right 3
+					board[row][col + 3]     == i)&& // right 3
 				   (board[row][col + 1]     == 0 || // right 1
 					board[row][col + 1]     == i)&& // right 1
 				   (board[row + 1][col + 2] == 0 || // down 1 right 2
@@ -5486,10 +5446,10 @@ public class Connect4 {
 			} // end if
 			if(board[row - 2][col] == 0){ // up 2
 				
-				if(((board[row + 1][col]     == 0 || // down 1
-					board[row + 1][col]     == i)|| // down 1
+				if((board[row + 1][col]     == 0 || // down 1
+					board[row + 1][col]     == i)&& // down 1
 				   (board[row - 3][col]     == 0 || // up 3
-					board[row - 3][col]     == i))&& // up 3
+					board[row - 3][col]     == i)&& // up 3
 				   (board[row - 1][col]     == 0 || // up 1
 					board[row - 1][col]     == i)&& // up 1
 				   (board[row - 2][col - 1] == 0 || // up 2 left 1 
@@ -5517,10 +5477,10 @@ public class Connect4 {
 				
 				if(board[row][col + 2] == 0){ // right 2
 					
-					if(((board[row][col - 1]     == 0 || // left 1
-					    board[row][col - 1]     == i)|| // left 1
+					if((board[row][col - 1]     == 0 || // left 1
+					    board[row][col - 1]     == i)&& // left 1
 					   (board[row][col + 3]     == 0 || // right 3
-						board[row][col + 3]     == i))&& // right 3
+						board[row][col + 3]     == i)&& // right 3
 					   (board[row][col + 1]     == 0 || // right 1
 					    board[row][col + 1]     == i)&& // right 1
 					   (board[row - 1][col + 2] == 0 || // up 1 right 2
@@ -5544,10 +5504,10 @@ public class Connect4 {
 				} // end if
 				if(board[row + 2][col] == 0){ // down 2
 					
-					if(((board[row - 1][col]     == 0 || // up 1
-						board[row - 1][col]     == i)|| // up 1
+					if((board[row - 1][col]     == 0 || // up 1
+						board[row - 1][col]     == i)&& // up 1
 					   (board[row + 3][col]     == 0 || // down 3
-						board[row + 3][col]     == i))&& // down 3
+						board[row + 3][col]     == i)&& // down 3
 					   (board[row + 1][col]     == 0 || // down 1
 						board[row + 1][col]     == i)&& // down 1
 					   (board[row + 2][col - 1] == 0 || // down 2 left 1 
@@ -5574,10 +5534,10 @@ public class Connect4 {
 			
 			if(board[row][col + 2] == 0){ // right 2
 				
-				if(((board[row][col - 1]     == 0 || // left 1
-					board[row][col - 1]     == i)|| // left 1
+				if((board[row][col - 1]     == 0 || // left 1
+					board[row][col - 1]     == i)&& // left 1
 				   (board[row][col + 3]     == 0 || // right 3
-					board[row][col + 3]     == i))&& // right 3
+					board[row][col + 3]     == i)&& // right 3
 				   (board[row][col + 1]     == 0 || // right 1
 					board[row][col + 1]     == i)&& // right 1
 				   (board[row + 1][col + 2] == 0 || // down 1 right 2
@@ -5601,10 +5561,10 @@ public class Connect4 {
 			} // end if
 			if(board[row - 2][col] == 0){ // up 2
 				
-				if(((board[row + 1][col]     == 0 || // down 1
-					board[row + 1][col]     == i)|| // down 1
+				if((board[row + 1][col]     == 0 || // down 1
+					board[row + 1][col]     == i)&& // down 1
 				   (board[row - 3][col]     == 0 || // up 3
-					board[row - 3][col]     == i))&& // up 3
+					board[row - 3][col]     == i)&& // up 3
 				   (board[row - 1][col]     == 0 || // up 1
 					board[row - 1][col]     == i)&& // up 1
 				   (board[row - 2][col - 1] == 0 || // up 2 left 1 
@@ -5652,10 +5612,10 @@ public class Connect4 {
 				
 				if(board[row][col - 2] == 0){ // left 2
 					
-					if(((board[row][col + 1]     == 0 || // right 1
-					    board[row][col + 1]     == i)|| // right 1
+					if((board[row][col + 1]     == 0 || // right 1
+					    board[row][col + 1]     == i)&& // right 1
 					   (board[row][col - 3]     == 0 || // left 3
-						board[row][col - 3]     == i))&& // left 3
+						board[row][col - 3]     == i)&& // left 3
 					   (board[row][col - 1]     == 0 || // left 1
 					    board[row][col - 1]     == i)&& // left 1
 					   (board[row - 1][col - 2] == 0 || // up 1 left 2
@@ -5678,10 +5638,10 @@ public class Connect4 {
 				} // end if
 				if(board[row + 2][col] == 0){ // down 2
 					
-					if(((board[row - 1][col]     == 0 || // up 1
-						board[row - 1][col]     == i)|| // up 1
+					if((board[row - 1][col]     == 0 || // up 1
+						board[row - 1][col]     == i)&& // up 1
 					   (board[row + 3][col]     == 0 || // down 3
-						board[row + 3][col]     == i))&& // down 3
+						board[row + 3][col]     == i)&& // down 3
 					   (board[row + 1][col]     == 0 || // down 1
 						board[row + 1][col]     == i)&& // down 1
 					   (board[row + 2][col + 1] == 0 || // down 2 right 1 
@@ -5708,10 +5668,10 @@ public class Connect4 {
 				
 				if(board[row][col - 2] == 0){ // left 2
 					
-					if(((board[row][col + 1]     == 0 || // right 1
-						board[row][col + 1]     == i)|| // right 1
+					if((board[row][col + 1]     == 0 || // right 1
+						board[row][col + 1]     == i)&& // right 1
 					   (board[row][col - 3]     == 0 || // left 3
-						board[row][col - 3]     == i))&& // left 3
+						board[row][col - 3]     == i)&& // left 3
 					   (board[row][col - 1]     == 0 || // left 1
 						board[row][col - 1]     == i)&& // left 1
 					   (board[row + 1][col - 2] == 0 || // down 1 left 2
@@ -5734,10 +5694,10 @@ public class Connect4 {
 				} // end if
 				if(board[row - 2][col] == 0){ // up 2
 					
-					if(((board[row + 1][col]     == 0 || // down 1
-						board[row + 1][col]     == i)|| // down 1
+					if((board[row + 1][col]     == 0 || // down 1
+						board[row + 1][col]     == i)&& // down 1
 					   (board[row - 3][col]     == 0 || // up 3
-						board[row - 3][col]     == i))&& // up 3
+						board[row - 3][col]     == i)&& // up 3
 					   (board[row - 1][col]     == 0 || // up 1
 						board[row - 1][col]     == i)&& // up 1
 					   (board[row - 2][col + 1] == 0 || // up 2 right 1 
@@ -5764,10 +5724,10 @@ public class Connect4 {
 					
 					if(board[row][col - 2] == 0){ // left 2
 						
-						if(((board[row][col + 1]     == 0 || // right 1
-						    board[row][col + 1]     == i)|| // right 1
+						if((board[row][col + 1]     == 0 || // right 1
+						    board[row][col + 1]     == i)&& // right 1
 						   (board[row][col - 3]     == 0 || // left 3
-							board[row][col - 3]     == i))&& // left 3
+							board[row][col - 3]     == i)&& // left 3
 						   (board[row][col - 1]     == 0 || // left 1
 						    board[row][col - 1]     == i)&& // left 1
 						   (board[row - 1][col - 2] == 0 || // up 1 left 2
@@ -5790,10 +5750,10 @@ public class Connect4 {
 					} // end if
 					if(board[row + 2][col] == 0){ // down 2
 						
-						if(((board[row - 1][col]     == 0 || // up 1
-							board[row - 1][col]     == i)|| // up 1
+						if((board[row - 1][col]     == 0 || // up 1
+							board[row - 1][col]     == i)&& // up 1
 						   (board[row + 3][col]     == 0 || // down 3
-							board[row + 3][col]     == i))&& // down 3
+							board[row + 3][col]     == i)&& // down 3
 						   (board[row + 1][col]     == 0 || // down 1
 							board[row + 1][col]     == i)&& // down 1
 						   (board[row + 2][col + 1] == 0 || // down 2 right 1 
@@ -5819,10 +5779,10 @@ public class Connect4 {
 				
 				if(board[row][col - 2] == 0){ // left 2
 					
-					if(((board[row][col + 1]     == 0 || // right 1
-						board[row][col + 1]     == i)|| // right 1
+					if((board[row][col + 1]     == 0 || // right 1
+						board[row][col + 1]     == i)&& // right 1
 					   (board[row][col - 3]     == 0 || // left 3
-						board[row][col - 3]     == i))&& // left 3
+						board[row][col - 3]     == i)&& // left 3
 					   (board[row][col - 1]     == 0 || // left 1
 						board[row][col - 1]     == i)&& // left 1
 					   (board[row + 1][col - 2] == 0 || // down 1 left 2
@@ -5845,10 +5805,10 @@ public class Connect4 {
 				} // end if
 				if(board[row - 2][col] == 0){ // up 2
 					
-					if(((board[row + 1][col]     == 0 || // down 1
-						board[row + 1][col]     == i)|| // down 1
+					if((board[row + 1][col]     == 0 || // down 1
+						board[row + 1][col]     == i)&& // down 1
 					   (board[row - 3][col]     == 0 || // up 3
-						board[row - 3][col]     == i))&& // up 3
+						board[row - 3][col]     == i)&& // up 3
 					   (board[row - 1][col]     == 0 || // up 1
 						board[row - 1][col]     == i)&& // up 1
 					   (board[row - 2][col + 1] == 0 || // up 2 right 1 
