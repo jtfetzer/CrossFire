@@ -1,5 +1,7 @@
 package boardGame;
 
+import java.awt.event.ActionEvent;
+import java.awt.event.ActionListener;
 import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.Collections;
@@ -14,7 +16,6 @@ import java.util.HashMap;
 public class BoardNode implements Serializable{
 	
 	private static final long serialVersionUID = 1L;
-
 	
 	int[][] board = new int[8][8];
 	private ArrayList<BoardNode> children = new ArrayList<>();
@@ -27,8 +28,7 @@ public class BoardNode implements Serializable{
 	public int value = 0;
 	public int minWinDepth = 0;
 	public int maxWinDepth = 0;
-
-	public String winner = "";
+	public static String winner = "";
 	
 	BoardNode(){
 		
@@ -168,20 +168,27 @@ public class BoardNode implements Serializable{
 	 * This is how a {@code move} is played.
 	 * @param move
 	 */
-	public void update(Move move) {
-		if(moves.add(move)){
+	public synchronized void update(Move move) {
+		if(!moves.contains(move)){
+			
+			moves.add(move);
 			lastMove = move;
 			int row = move.row; 
 			int col = move.column;
 			board[row][col] = move.player;
 			map.put(move.moveString, move.moveString);
-			if(move.player == 1){
-				printBoard();
+			
+			if(!CrossFire.load){
+				if(move.player == 2){
+					ActionListener[] a = CrossFire.buttons[move.row * 8 + move.column].getActionListeners();
+					a[0].actionPerformed(new ActionEvent(CrossFire.buttons[move.row * 8 + move.column], 2, "Computer"));
+				}
 			}
 		} else {
-			System.out.println("Update Error");
-			System.exit(0);
+			System.out.println("Error update: " + move.moveString);
+			this.printBoard();
 		}
+		GameLogic.testGameOver(this);
 	}
 	
 	/**
@@ -190,7 +197,7 @@ public class BoardNode implements Serializable{
 	public void priorState() {
 		map.remove(this.lastMove.moveString);
 		moves.remove(moves.size() - 1);
-		int row = Connect4.getRow(lastMove.moveString.substring(0,1));
+		int row = GameLogic.getRow(lastMove.moveString.substring(0,1));
 		int col = Integer.parseInt(lastMove.moveString.substring(1, 2));
 		board[row][col] = 0;
 	}
@@ -234,40 +241,6 @@ public class BoardNode implements Serializable{
 			System.out.println(node.lastMove.moveString + ": val = " + node.lastMove.getValue() + ", depth = " + node.depth + "; ");
 		}
 		System.out.println("\n");
-	}
-
-	/**
-	 * Restores the state of the game from a saved state.
-	 */
-	public void restoreObject(){
-		int x = 0;
-		int o = 0;
-		for (int i = 0; i < board.length; i++) {
-			for (int j = 0; j < board.length; j++) {
-				if(board[i][j] == 1){
-					++x;
-				} else if(board[i][j] == 2){
-					++o;
-				}
-			} // end for j
-		} // end for i
-		
-		if(x >= o){
-			firstPlayer = 1; // human
-		} else {
-			firstPlayer = 2; // computer
-		}
-		for (int i = 0; i < board.length; i++) {
-			for (int j = 0; j < board.length; j++) {
-				if(board[i][j] == 1){
-					moves.addUnique(new Move(i,j,1,null));
-					map.put(Connect4.getRow(i) + (j + 1), Connect4.getRow(i) + (j + 1));
-				} else if(board[i][j] == 2){
-					moves.addUnique(new Move(i,j,2,null));
-					map.put(Connect4.getRow(i) + (j + 1), Connect4.getRow(i) + (j + 1));
-				}
-			} // end for j
-		} // end for i
 	}
 
 	/**
@@ -600,6 +573,69 @@ public class BoardNode implements Serializable{
 			}
 		} // end for i
 		return this.getChild(min_move_index);
+	}
+	
+	public static void print(int[][] board, int firstPlayer) {
+		String[] rows = {"A", "B", "C", "D", "E", "F", "G", "H"};
+		int[] cols = {1,2,3,4,5,6,7,8};
+		System.out.print("\n  ");
+		for (int i = 0; i < cols.length; i++) {
+			System.out.print(cols[i] + " ");
+		} // end for i
+		System.out.println();
+		for (int i = 0; i < board.length; i++) {
+			System.out.print(rows[i] + " ");
+			for (int j = 0; j < board.length; j++) {
+				if(board[i][j] == 0) {
+					System.out.print("_ ");
+				} else if(board[i][j] == firstPlayer) {
+					System.out.print("X ");
+				} else { // if (board[i][j] == 2)
+					System.out.print("O ");
+				} // end else
+			} // end for i
+			System.out.println();
+		} // end for j
+	}
+	public static String boardToString(int[][] board) {
+		String boardString = "";
+		
+		String[] rows = {"A", "B", "C", "D", "E", "F", "G", "H"};
+		int[] cols = {1,2,3,4,5,6,7,8};
+
+		for (int i = 0; i < cols.length; i++) {
+			boardString += cols[i] + " ";
+		} // end for i
+		boardString += "\n";
+		for (int i = 0; i < board.length; i++) {
+			boardString += rows[i] + " ";
+			for (int j = 0; j < board.length; j++) {
+				if(board[i][j] == 0) {
+					boardString += "_ ";
+				} else if(board[i][j] == CrossFire.firstPlayer) {
+					boardString += "X ";
+				} else { // if (board[i][j] == 2)
+					boardString += "O ";
+				} // end else
+			} // end for i
+			boardString += "\n";
+		} // end for j
+		return boardString;
+	}
+	public void reset() {
+		board = new int[8][8];
+		children = new ArrayList<>();
+		parent = null;
+		lastMove = null;
+		map = new HashMap<>(); // A HashMap of all moves played.
+		moves = new MoveSet(); // A set of all moves played.
+		firstPlayer = CrossFire.firstPlayer;
+		depth = 0;
+		value = 0;
+		minWinDepth = 0;
+		maxWinDepth = 0;
+		winner = "";
+		this.removeAllChildNodes();
 	}
 	
 	
