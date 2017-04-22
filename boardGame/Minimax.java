@@ -40,7 +40,6 @@ public class Minimax implements Runnable{
 			return;
 		}
 		
-		// thread pool ?
 		MoveSet attacks = Connect4.getMostPromisingMoves(node, Connect4.ATTACK_MOVES);
 		MoveSet blocks = Connect4.getMostPromisingMoves(node, Connect4.BLOCK_MOVES);
 		MoveSet bestMoves = blocks.addAll(attacks).reduceMin(Connect4.MAX_WIDTH / 2);
@@ -51,13 +50,6 @@ public class Minimax implements Runnable{
 			in.nextLine();
 		}
 		
-//		if(blocks.min().getValue() > attacks.min().getValue()){ 
-//			if(blocks.unstopableLoss()){
-//				node.maxWinDepth = depth + 2;
-//				node.value = MAX_WINS;
-//				return;
-//			}
-//		} 
 		node.addAll(bestMoves);
 		
 		for(int j = 0; j < node.size(); j++){ // most promising nodes
@@ -112,13 +104,7 @@ public class Minimax implements Runnable{
 			System.out.println("Press enter to continue:");
 			in.nextLine();
 		}
-//		if(blocks.max().getValue() > attacks.max().getValue()){ 
-//			if(blocks.unstopableLoss()){
-//				node.minWinDepth = depth + 2;
-//				node.value = MIN_WINS;
-//				return;
-//			}
-//		} 
+ 
 		node.addAll(bestMoves);
 		
 		for(int i = 0; i < node.size(); i++){ // most promising nodes
