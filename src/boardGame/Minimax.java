@@ -18,10 +18,10 @@ public class Minimax implements Runnable{
 	
 	public static void min(BoardNode node, int depth){
 
-		if(CrossFire.SHOW_BOARDS){
+		if(GameLogic.SHOW_BOARDS){
 			System.out.println("-------MIN------- Depth: " + depth + " " + node.lastMove.moveString);
 			node.printBoard();
-			if(!CrossFire.SHOW_MOVES_MINIMAX){
+			if(!GameLogic.SHOW_MOVES_MINIMAX){
 				try {
 					Thread.sleep(1000);
 				} catch (InterruptedException e) {
