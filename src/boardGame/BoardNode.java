@@ -453,7 +453,7 @@ public class BoardNode implements Serializable{
 		}
 		System.out.println("Child Winner Nodes: " + children.size());
 		for(BoardNode node : children){
-				System.out.println(node.lastMove.moveString + ": val = " + node.value + ", depth = " + node.depth + " winner: " + node.winner + "; ");
+				System.out.println(node.lastMove.moveString + ": val = " + node.value + ", depth = " + node.depth + " winner: " + BoardNode.winner + "; ");
 		}
 		System.out.println("\n");
 	}
