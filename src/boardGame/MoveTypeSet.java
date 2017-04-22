@@ -69,13 +69,13 @@ public class MoveTypeSet extends ArrayList<MoveType>{
 //				   this.containsElement(MoveType.Type.PRE_OPEN_3_VERT)){ 
 //					
 //					System.out.println("Forced WIN");
-//					addUnique( new MoveType(MoveType.Type.FORCE_WIN, (int) (Connect4.MAX_WINS * .9)));
+//					addUnique( new MoveType(MoveType.Type.FORCE_WIN, (int) (CrossFire.MAX_WINS * .9)));
 //				}
 //				if(this.containsElement(MoveType.Type.THREE_4_VERT ) && 
 //				   this.containsElement(MoveType.Type.PRE_OPEN_3_HORIZ)){ 
 //					
 //					System.out.println("Forced WIN");
-//					addUnique( new MoveType(MoveType.Type.FORCE_WIN, (int) (Connect4.MAX_WINS * .9)));
+//					addUnique( new MoveType(MoveType.Type.FORCE_WIN, (int) (CrossFire.MAX_WINS * .9)));
 //				}
 //			}
 		}
