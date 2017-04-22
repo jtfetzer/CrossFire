@@ -7010,6 +7010,7 @@ public class GameLogic {
 		return oneOfFourPositions;
 	} // end method
 	
+	@SuppressWarnings("unused")
 	private static void printWinner(int player) {
 		if(player == 2){
 			System.out.println("\n  I win!");
