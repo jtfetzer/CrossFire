@@ -46,7 +46,7 @@ public class MoveSet extends ArrayList<Move> implements Comparator<Move>{
 	 * @param numberOfBestMoves
 	 */
 	public MoveSet reduceMax(int numberOfBestMoves) { 
-		if( numberOfBestMoves < 0 || numberOfBestMoves > this.size()){
+		if( numberOfBestMoves <= 0 || numberOfBestMoves > this.size() || this.size() < 1){
 			return this;
 		}
 		Collections.sort(this, new MaxMoveComparator()); // sort bestMoves with best first descending order
@@ -60,7 +60,7 @@ public class MoveSet extends ArrayList<Move> implements Comparator<Move>{
 	 * @return 
 	 */
 	public MoveSet reduceMin(int numberOfBestMoves) {
-		if( numberOfBestMoves < 0 || numberOfBestMoves > this.size()){
+		if( numberOfBestMoves <= 0 || numberOfBestMoves > this.size() || this.size() < 1){
 			return this;
 		}
 		Collections.sort(this, new MinMoveComparator()); // sort bestMoves with best first descending order
@@ -89,6 +89,9 @@ public class MoveSet extends ArrayList<Move> implements Comparator<Move>{
 	 * @param msg
 	 */
 	public void print(String msg){
+		if(this.size() < 1){
+			return;
+		}
 		if(!msg.equals("")){
 			System.out.println(msg + ": ");
 		}
@@ -154,14 +157,14 @@ public class MoveSet extends ArrayList<Move> implements Comparator<Move>{
 		}
 		if(max){
 			for (int i = 0; i < this.size(); i++) {
-				if(this.get(i).getBestMoveValue() == Connect4.getMultiplierValue(Connect4.MAX_WINS, Connect4.BLOCK_MULT)){
+				if(this.get(i).getBestMoveValue() == GameLogic.getMultiplierValue(GameLogic.MAX_WINS, GameLogic.BLOCK_MULT)){
 					++count;
 				} // end if
 			} // end for
 		} 
 		else { // Min
 			for (int i = 0; i < this.size(); i++) {
-				if(this.get(i).getBestMoveValue() == Connect4.getMultiplierValue(Connect4.MIN_WINS, Connect4.BLOCK_MULT)){
+				if(this.get(i).getBestMoveValue() == GameLogic.getMultiplierValue(GameLogic.MIN_WINS, GameLogic.BLOCK_MULT)){
 					++count;
 				} // end if
 			} // end for

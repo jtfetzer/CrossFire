@@ -105,11 +105,7 @@ public class MoveTypeSet extends ArrayList<MoveType>{
 		
 		String list = "";
 		if(this.size() > 1){
-			for(MoveType next : this){
-				list += next.type + ": " + next.value + ", ";;
-			}
-			list.substring(0,list.lastIndexOf(","));
-		} else if(this.size() > 0){
+} else if(this.size() > 0){
 			for(MoveType next : this){
 				list += next.type + ": " + next.value;
 			}

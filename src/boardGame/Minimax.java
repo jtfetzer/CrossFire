@@ -18,10 +18,10 @@ public class Minimax implements Runnable{
 	
 	public static void min(BoardNode node, int depth){
 
-		if(Connect4.SHOW_BOARDS){
+		if(GameLogic.SHOW_BOARDS){
 			System.out.println("-------MIN------- Depth: " + depth + " " + node.lastMove.moveString);
 			node.printBoard();
-			if(!Connect4.SHOW_MOVES_MINIMAX){
+			if(!GameLogic.SHOW_MOVES_MINIMAX){
 				try {
 					Thread.sleep(1000);
 				} catch (InterruptedException e) {
@@ -30,21 +30,22 @@ public class Minimax implements Runnable{
 			}
 		}
 		
-		if(node.lastMove.getBestMoveValue() == Connect4.MAX_WINS){
-			node.value = Connect4.MAX_WINS;
+		if(node.lastMove.getBestMoveValue() == GameLogic.MAX_WINS){
+			node.value = GameLogic.MAX_WINS;
 			node.maxWinDepth = depth;
 			return;
 		}
 
-		if(depth == Connect4.MAX_DEPTH || node.getNumEmptySpaces() == 0){
+		if(depth == GameLogic.MAX_DEPTH || node.getNumEmptySpaces() == 0){
+			node.minWinDepth = depth + 1; // If real wins exist this depth will be greater, and will be ignored.
 			return;
 		}
 		
-		MoveSet attacks = Connect4.getMostPromisingMoves(node, Connect4.ATTACK_MOVES);
-		MoveSet blocks = Connect4.getMostPromisingMoves(node, Connect4.BLOCK_MOVES);
-		MoveSet bestMoves = blocks.addAll(attacks).reduceMin(Connect4.MAX_WIDTH / 2);
+		MoveSet attacks = GameLogic.getMostPromisingMoves(node, GameLogic.ATTACK_MOVES);
+		MoveSet blocks = GameLogic.getMostPromisingMoves(node, GameLogic.BLOCK_MOVES);
+		MoveSet bestMoves = blocks.addAll(attacks).reduceMin(3);
 
-		if(Connect4.SHOW_MOVES_MINIMAX){
+		if(GameLogic.SHOW_MOVES_MINIMAX){
 			bestMoves.print("BestMoves");
 			System.out.println("Press enter to continue:");
 			in.nextLine();
@@ -54,13 +55,13 @@ public class Minimax implements Runnable{
 		
 		for(int j = 0; j < node.size(); j++){ // most promising nodes
 			max(node.getChild(j), depth + 1);
-			if(node.getChild(j).value == Connect4.MAX_WINS){
+			if(node.getChild(j).value == GameLogic.MAX_WINS){
 				if(node.maxWinDepth < node.getChild(j).maxWinDepth){ // Find longest loss path
 					node.maxWinDepth = node.getChild(j).maxWinDepth; 
 				}
-			} else if(node.getChild(j).value == Connect4.MIN_WINS){
+			} else if(node.getChild(j).value == GameLogic.MIN_WINS){
 				node.minWinDepth = node.getChild(j).minWinDepth;
-				node.value = Connect4.MIN_WINS;
+				node.value = GameLogic.MIN_WINS;
 				node.removeAllChildNodesExcept(node.getChild(j));
 				return;
 			} 
@@ -73,10 +74,10 @@ public class Minimax implements Runnable{
 	
 	public static void max(BoardNode node, int depth){
 
-		if(Connect4.SHOW_BOARDS){
+		if(GameLogic.SHOW_BOARDS){
 			System.out.println("-------MAX------- Depth: " + depth + " " + node.lastMove.moveString);
 			node.printBoard();
-			if(!Connect4.SHOW_MOVES_MINIMAX){
+			if(!GameLogic.SHOW_MOVES_MINIMAX){
 				try {
 					Thread.sleep(1000);
 				} catch (InterruptedException e) {
@@ -85,38 +86,37 @@ public class Minimax implements Runnable{
 			}
 		}
 		
-		if(node.lastMove.getBestMoveValue() == Connect4.MIN_WINS){
-			node.value = Connect4.MIN_WINS;
+		if(node.lastMove.getBestMoveValue() == GameLogic.MIN_WINS){
 			node.minWinDepth = depth;
 			return;
 		}
 
-		if(depth == Connect4.MAX_DEPTH || node.getNumEmptySpaces() == 0){
+		if(depth == GameLogic.MAX_DEPTH || node.getNumEmptySpaces() == 0){
 			return;
 		}
-		MoveSet attacks = Connect4.getMostPromisingMoves(node, Connect4.ATTACK_MOVES);
-		MoveSet blocks = Connect4.getMostPromisingMoves(node, Connect4.BLOCK_MOVES);
-		MoveSet bestMoves = attacks.addAll(blocks).reduceMax(Connect4.MAX_WIDTH / 2);
+		MoveSet attacks = GameLogic.getMostPromisingMoves(node, GameLogic.ATTACK_MOVES);
+		MoveSet blocks = GameLogic.getMostPromisingMoves(node, GameLogic.BLOCK_MOVES);
+		MoveSet bestMoves = attacks.addAll(blocks).reduceMax(3);
 
-		if(Connect4.SHOW_MOVES_MINIMAX){
+		if(GameLogic.SHOW_MOVES_MINIMAX){
 			
 			bestMoves.print("BestMoves");
 			System.out.println("Press enter to continue:");
 			in.nextLine();
 		}
- 
+
 		node.addAll(bestMoves);
 		
 		for(int i = 0; i < node.size(); i++){ // most promising nodes
 			min(node.getChild(i), depth + 1);
 
-			if(node.getChild(i).value == Connect4.MIN_WINS){
+			if(node.getChild(i).value == GameLogic.MIN_WINS){
 				if(node.minWinDepth < node.getChild(i).minWinDepth){ // Find longest loss path
 					node.minWinDepth = node.getChild(i).minWinDepth;
 				} 
-			} else if(node.getChild(i).value == Connect4.MAX_WINS){
+			} else if(node.getChild(i).value == GameLogic.MAX_WINS){
 				node.maxWinDepth = node.getChild(i).maxWinDepth;
-				node.value = Connect4.MAX_WINS;
+				node.value = GameLogic.MAX_WINS;
 				node.removeAllChildNodesExcept(node.getChild(i));
 				return;
 			} 

@@ -16,7 +16,7 @@ public class Move implements Serializable{
 	Move(int row, int column, int player, MoveType type){
 		this.row = row;
 		this.column = column;
-		this.moveString = Connect4.getRow(row) + (column + 1);
+		this.moveString = GameLogic.getRow(row) + (column + 1);
 		this.player = player;
 		if(type != null){
 			this.moveTypeSet.addUnique(type);

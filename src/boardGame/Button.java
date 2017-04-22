@@ -19,57 +19,57 @@ public class Button extends JButton implements ActionListener{
 	static int winner = 0;
 	
 	ImageIcon[] images = {
-			new ImageIcon(this.getClass().getResource("/a10.png")),
-			new ImageIcon(this.getClass().getResource("/a11.png")),
-			new ImageIcon(this.getClass().getResource("/a12.png")),
-			new ImageIcon(this.getClass().getResource("/a13.png")), 
+			new ImageIcon(this.getClass().getResource("/images/a10.png")),
+			new ImageIcon(this.getClass().getResource("/images/a11.png")),
+			new ImageIcon(this.getClass().getResource("/images/a12.png")),
+			new ImageIcon(this.getClass().getResource("/images/a13.png")), 
 			
-			new ImageIcon(this.getClass().getResource("/a18.png")),
-			new ImageIcon(this.getClass().getResource("/a19.png")),
-			new ImageIcon(this.getClass().getResource("/a20.png")),
-			new ImageIcon(this.getClass().getResource("/a21.png")),
+			new ImageIcon(this.getClass().getResource("/images/a18.png")),
+			new ImageIcon(this.getClass().getResource("/images/a19.png")),
+			new ImageIcon(this.getClass().getResource("/images/a20.png")),
+			new ImageIcon(this.getClass().getResource("/images/a21.png")),
 			
-			new ImageIcon(this.getClass().getResource("/a26.png")),
-			new ImageIcon(this.getClass().getResource("/a27.png")),
-			new ImageIcon(this.getClass().getResource("/a28.png")),
-			new ImageIcon(this.getClass().getResource("/a29.png")),
+			new ImageIcon(this.getClass().getResource("/images/a26.png")),
+			new ImageIcon(this.getClass().getResource("/images/a27.png")),
+			new ImageIcon(this.getClass().getResource("/images/a28.png")),
+			new ImageIcon(this.getClass().getResource("/images/a29.png")),
 			
-			new ImageIcon(this.getClass().getResource("/a34.png")),
-			new ImageIcon(this.getClass().getResource("/a35.png")),
-			new ImageIcon(this.getClass().getResource("/a36.png")),
-			new ImageIcon(this.getClass().getResource("/a37.png")),
+			new ImageIcon(this.getClass().getResource("/images/a34.png")),
+			new ImageIcon(this.getClass().getResource("/images/a35.png")),
+			new ImageIcon(this.getClass().getResource("/images/a36.png")),
+			new ImageIcon(this.getClass().getResource("/images/a37.png")),
 			
-			new ImageIcon(this.getClass().getResource("/a42.png")),
-			new ImageIcon(this.getClass().getResource("/a43.png")),
-			new ImageIcon(this.getClass().getResource("/a44.png")),
-			new ImageIcon(this.getClass().getResource("/a45.png")),
+			new ImageIcon(this.getClass().getResource("/images/a42.png")),
+			new ImageIcon(this.getClass().getResource("/images/a43.png")),
+			new ImageIcon(this.getClass().getResource("/images/a44.png")),
+			new ImageIcon(this.getClass().getResource("/images/a45.png")),
 			
-			new ImageIcon(this.getClass().getResource("/a50.png")),
-			new ImageIcon(this.getClass().getResource("/a51.png")),
-			new ImageIcon(this.getClass().getResource("/a52.png")),
-			new ImageIcon(this.getClass().getResource("/a53.png")),
+			new ImageIcon(this.getClass().getResource("/images/a50.png")),
+			new ImageIcon(this.getClass().getResource("/images/a51.png")),
+			new ImageIcon(this.getClass().getResource("/images/a52.png")),
+			new ImageIcon(this.getClass().getResource("/images/a53.png")),
 
-			new ImageIcon(this.getClass().getResource("/a57.png")),
-			new ImageIcon(this.getClass().getResource("/a58.png")),
-			new ImageIcon(this.getClass().getResource("/a59.png")),
-			new ImageIcon(this.getClass().getResource("/a60.png")),
-			new ImageIcon(this.getClass().getResource("/a61.png")),
-			new ImageIcon(this.getClass().getResource("/a62.png")),
+			new ImageIcon(this.getClass().getResource("/images/a57.png")),
+			new ImageIcon(this.getClass().getResource("/images/a58.png")),
+			new ImageIcon(this.getClass().getResource("/images/a59.png")),
+			new ImageIcon(this.getClass().getResource("/images/a60.png")),
+			new ImageIcon(this.getClass().getResource("/images/a61.png")),
+			new ImageIcon(this.getClass().getResource("/images/a62.png")),
 	};
 	
 	public Button(int i){
 		element = i;
-		good_dark = new ImageIcon(this.getClass().getResource("/good_dark.png"));
-		good_light = new ImageIcon(this.getClass().getResource("/good_light.png"));
-		bad_dark = new ImageIcon(this.getClass().getResource("/bad_dark.png"));
-		bad_light = new ImageIcon(this.getClass().getResource("/bad_light.png"));
-		dark = new ImageIcon(this.getClass().getResource("/dark.png"));
-		light = new ImageIcon(this.getClass().getResource("/light.png"));
-		mad_bad_dark = new ImageIcon(this.getClass().getResource("/mad_bad_dark.png"));
-		mad_bad_light = new ImageIcon(this.getClass().getResource("/mad_bad_light.png"));
-		mad_good_dark = new ImageIcon(this.getClass().getResource("/mad_good_dark.png"));
-		mad_good_light = new ImageIcon(this.getClass().getResource("/mad_good_light.png"));
-		black = new ImageIcon(this.getClass().getResource("/black.png"));
+		good_dark = new ImageIcon(this.getClass().getResource("/images/good_dark.png"));
+		good_light = new ImageIcon(this.getClass().getResource("/images/good_light.png"));
+		bad_dark = new ImageIcon(this.getClass().getResource("/images/bad_dark.png"));
+		bad_light = new ImageIcon(this.getClass().getResource("/images/bad_light.png"));
+		dark = new ImageIcon(this.getClass().getResource("/images/dark.png"));
+		light = new ImageIcon(this.getClass().getResource("/images/light.png"));
+		mad_bad_dark = new ImageIcon(this.getClass().getResource("/images/mad_bad_dark.png"));
+		mad_bad_light = new ImageIcon(this.getClass().getResource("/images/mad_bad_light.png"));
+		mad_good_dark = new ImageIcon(this.getClass().getResource("/images/mad_good_dark.png"));
+		mad_good_light = new ImageIcon(this.getClass().getResource("/images/mad_good_light.png"));
+		black = new ImageIcon(this.getClass().getResource("/images/black.png"));
 		
 		initializeBoard(i);
 		this.addActionListener(this);

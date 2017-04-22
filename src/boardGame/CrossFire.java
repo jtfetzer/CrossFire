@@ -24,7 +24,7 @@ public class CrossFire extends JFrame{
 	
 	CrossFire(){
 		super("CrossFire");
-		ImageIcon img = new ImageIcon(this.getClass().getResource("/good_light.png"));
+		ImageIcon img = new ImageIcon(this.getClass().getResource("/images/good_light.png"));
 		setIconImage(img.getImage());
 		p = new JPanel();
 		buttons = new Button[64];
