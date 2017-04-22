@@ -77,6 +77,7 @@ public class MoveType {
 		return false;
 	}
 
+	@SuppressWarnings("unused")
 	private boolean isOpen() {
 		if(this.type.toString().contains("OPEN")){
 			return true;
@@ -85,6 +86,7 @@ public class MoveType {
 		}
 	}
 	
+	@SuppressWarnings("unused")
 	private boolean withModifiers(){
 		if(this.type.toString().contains("PRE") || this.type.toString().contains("BLOCK")){
 			return false;
