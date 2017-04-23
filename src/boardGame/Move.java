@@ -1,7 +1,6 @@
 package boardGame;
 
 import java.io.Serializable;
-
 /**
  * Represents 
  */
@@ -11,7 +10,7 @@ public class Move implements Serializable{
 	int column;
 	String moveString;
 	int player;
-	MoveTypeSet moveTypeSet = new MoveTypeSet();
+	boardGame.MoveTypeSet moveTypeSet = new boardGame.MoveTypeSet();
 	
 	Move(int row, int column, int player, MoveType type){
 		this.row = row;
