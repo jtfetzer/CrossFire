@@ -358,26 +358,24 @@ public class Button extends JButton implements ActionListener{
 		}
 	}
 	
-//	public void showWinnerAnimation2() {
-//		if(winner == 1 || winner == 0){
-//			if(color.equals("mad_bad_dark")){
-//				color = "bad_dark";
-//				setIcon(bad_dark);
-//			} else if(color.equals("mad_bad_light")){
-//				color = "bad_light";
-//				setIcon(bad_light);
-//			}
-//		} else if(winner == 2 || winner == 0){
-//			if(color.equals("mad_good_dark")){
-//				color = "good_dark";
-//				setIcon(good_dark);
-//			} else if(color.equals("max_good_light")){
-//				color = "good_light";
-//				setIcon(good_light);
-//			}
-//		}
-//	}
-	
+	public void showDraw() {
+		if(color.equals("bad_dark")){
+			color = "mad_bad_dark";
+			setIcon(mad_bad_dark);
+		}
+		if(color.equals("bad_light")){
+			color = "mad_bad_light";
+			setIcon(mad_bad_light);
+		}
+		if(color.equals("good_dark")){
+			color = "mad_good_dark";
+			setIcon(mad_good_dark);
+		} 
+		if(color.equals("good_light")){
+			color = "mad_good_light";
+			setIcon(mad_good_light);
+		}
+	}
 	
 
 	public void toBlack() {
