@@ -7,7 +7,6 @@ import javax.swing.JPanel;
 /**
  * This class contains the main method.
  * @author Jonathan Fetzer
- *
  */
 
 public class CrossFire extends JFrame{
