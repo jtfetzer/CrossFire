@@ -77,10 +77,15 @@ public class CrossFire extends JFrame{
 			e.printStackTrace();
 		}
 		
-		for (int i = 0; i < buttons.length; i++) {
-			buttons[i].showWinner();
-		} // end for i
-		
+		if(Button.winner != 0){
+			for (int i = 0; i < buttons.length; i++) {
+				buttons[i].showWinner();
+			} // end for i
+		} else {
+			for (int i = 0; i < buttons.length; i++) {
+				buttons[i].showDraw();
+			} // end for i
+		}
 		
 		try {
 			Thread.sleep(4000);
