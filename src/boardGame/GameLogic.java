@@ -69,8 +69,8 @@ public class GameLogic {
 //				printWinner(root.lastMove.player);
 //				System.exit(0);
 			} // end if
-			if(root.isStalemate()){
-				
+			else {
+				CrossFire.showVictory();
 //				if(root.lastMove.player != 1){
 //					root.printBoard();
 //				}
@@ -7020,7 +7020,7 @@ public class GameLogic {
 	} // end method printWinner
 
 	private static boolean gameOver(BoardNode root) {
-		if(possibleConnect4(root, root.lastMove)){
+		if(possibleConnect4(root, root.lastMove) || root.getNumEmptySpaces() == 0){
 			return true;
 		} // end if
 		return false;
