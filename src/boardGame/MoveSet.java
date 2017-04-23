@@ -104,6 +104,9 @@ public class MoveSet extends ArrayList<Move> implements Comparator<Move>{
 	 * @return the {@link Move} with the greatest value.
 	 */
 	public Move max(){
+		if(this.size() == 0){
+			return null;
+		}
 		Collections.sort(this, new MaxMoveComparator()); // sort bestMoves into descending order by value
 		return this.get(0);
 	}
