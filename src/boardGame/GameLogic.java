@@ -342,6 +342,11 @@ public class GameLogic {
 		if(root.moves.size() >= 2){
 			attacks.addAll(blocks);
 		} else {
+			try {
+				Thread.sleep(1000);
+			} catch (InterruptedException e) {
+				e.printStackTrace();
+			}
 			return blocks.max();
 		}
 		
@@ -366,7 +371,7 @@ public class GameLogic {
 		if(SHOW_BOARDS || SHOW_MOVES || SHOW_MOVES_MINIMAX){
 			executor = Executors.newFixedThreadPool(1);
 		} else {
-			executor = Executors.newFixedThreadPool(MAX_WIDTH);
+			executor = Executors.newFixedThreadPool(Runtime.getRuntime().availableProcessors());
 		}
 		
 		for (int j = 0; j < root.size(); j++) { // each node is evaluated up to Max_Depth
